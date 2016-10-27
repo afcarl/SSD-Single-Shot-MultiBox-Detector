@@ -80,13 +80,16 @@ end
 function test(testTarget, testName)
     
     os.execute('rm -f ' .. fig_dir .. '*') 
-       
+    os.execute('rm -f ' .. score_dir .. '*') 
+  
     model:evaluate()
 
     testDataSz = table.getn(testName)
     local startTime = sys.clock() 
     for t = 1,testDataSz do
         
+        print(tostring(t) .. "/" .. tostring(testDataSz) ..  "th frame is in testing...")
+
         input = image.load(testName[t])
         input = image.scale(input,imgSz,imgSz)
         target = testTarget[t]
@@ -177,7 +180,7 @@ function test(testTarget, testName)
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open(resultDir .. "/comp3_det_test_" .. classList[lid] .. ".txt","a")
+            fp_result = io.open(result_dir .. "score/comp3_det_test_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
 
                 for rid = 1,resultBB[lid]:size()[1] do
@@ -203,7 +206,7 @@ function test(testTarget, testName)
 
 
         --draw BB
-        image.save(tostring(t) .. ".jpg",input)
+        image.save(fig_dir .. tostring(t) .. ".jpg",input)
         
     end
     local endTime = sys.clock()

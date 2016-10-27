@@ -2,6 +2,7 @@ db_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/"
 result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
+score_dir = result_dir .. "score/"
 
 mode = "test"
 continue = false
