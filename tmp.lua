@@ -7,6 +7,8 @@ require 'module/normalLinear'
 require 'sys'
 dofile 'etc.lua'
 
-
-a = {}
-print(type(a))
+do
+    local a = 3
+    print(a)
+end
+print(a)

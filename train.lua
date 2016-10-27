@@ -69,11 +69,12 @@ function train(trainTarget, trainName)
                     loc_error = 0
                    
                     doBP = {}
-                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[1],fmSz[1]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,3,fmSz[1],fmSz[1]):zero())
                     table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[2],fmSz[2]):zero())
                     table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[3],fmSz[3]):zero())
                     table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[4],fmSz[4]):zero())
-                    table.insert(doBP,torch.Tensor(curBatchDim,5,fmSz[5],fmSz[5]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[5],fmSz[5]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,5,fmSz[6],fmSz[6]):zero())
 
                      --layer, batch, ar*classNum + ar*4, sz, sz
                     local outputs = model:forward(inputs)
@@ -105,19 +106,20 @@ function train(trainTarget, trainName)
                             local xmin_ = xmin * (imgSz/imgWidth)
                             local ymax_ = ymax * (imgSz/imgHeight)
                             local ymin_ = ymin * (imgSz/imgHeight)
+                           
                             
-                            --[===[
                             --for debug
                             local img = inputs[bid]
                             img = drawRectangle(img,xmin_,ymin_,xmax_,ymax_)
                             image.save(tostring(bid) .. "_" .. tostring(gid) .. ".jpg",img)
-                            --]===]
                             
                             local gt_area = (xmax_ - xmin_) * (ymax_ - ymin_)
                             
                             for lid = 1,m do
                                 
-                                if lid < m then
+                                if lid == 1 then
+                                    ar_num = 3
+                                elseif lid < m then
                                     ar_num = 6
                                 else
                                     ar_num = 5
@@ -142,7 +144,7 @@ function train(trainTarget, trainName)
                                 yIdx = yIdx[1][1][xIdx]
                                 arIdx = arIdx[1][yIdx][xIdx]
                                 
-                                --[===[
+                                
                                 --for debug
                                 local img = inputs[bid]
                                 local xmax = restored_box[lid][arIdx][1][yIdx][xIdx]
@@ -151,8 +153,6 @@ function train(trainTarget, trainName)
                                 local ymin = restored_box[lid][arIdx][4][yIdx][xIdx]
                                 img = drawRectangle(img,xmin,ymin,xmax,ymax)
                                 image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
-                                --]===]
-
                                 
                                 local tx = ((xmin_+xmax_)/2 - (restored_box[lid][arIdx][2][yIdx][xIdx]+restored_box[lid][arIdx][1][yIdx][xIdx])/2)/(restored_box[lid][arIdx][1][yIdx][xIdx]-restored_box[lid][arIdx][2][yIdx][xIdx])
                                 local ty = ((ymin_+ymax_)/2 - (restored_box[lid][arIdx][4][yIdx][xIdx]+restored_box[lid][arIdx][3][yIdx][xIdx])/2)/(restored_box[lid][arIdx][3][yIdx][xIdx]-restored_box[lid][arIdx][4][yIdx][xIdx])
@@ -287,7 +287,9 @@ function train(trainTarget, trainName)
                             image.save(tostring(label) .. "_" .. tostring(bid) .. "_" .. tostring(pid) .. ".jpg",img)
                             --]===]
                             
-                            if lid < m then
+                            if lid == 1 then
+                                ar_num = 3
+                            elseif lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -337,7 +339,9 @@ function train(trainTarget, trainName)
                             local class_grad = class_dfdo[pid]
                             local loc_grad = loc_dfdo[pid]
                             
-                            if lid < m then
+                            if lid == 1 then
+                                ar_num = 3
+                            elseif lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -358,7 +362,9 @@ function train(trainTarget, trainName)
                             local xid = neg_set[nid][4]
                             local class_grad = class_dfdo[table.getn(pos_set) + nid]
                             
-                            if lid < m then
+                            if lid == 1 then
+                                ar_num = 3
+                            elseif lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -370,8 +376,7 @@ function train(trainTarget, trainName)
 
 
                     end
-                        
-
+                    
                     model:backward(inputs,tot_dfdo)
 
                     gradParams:div(curBatchDim)

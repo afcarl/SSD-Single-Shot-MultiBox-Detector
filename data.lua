@@ -1,7 +1,6 @@
 require "torch"
 require "image"
 require "math"
-require "LuaXML"
 dofile "etc.lua"
 
 

@@ -106,8 +106,10 @@ function test(testTarget, testName)
         end
 
         for lid = 1,m do
-           
-            if lid < m then
+            
+            if lid == 1 then
+                ar_num = 3
+            elseif lid < m then
                 ar_num = 6
             else
                 ar_num = 5

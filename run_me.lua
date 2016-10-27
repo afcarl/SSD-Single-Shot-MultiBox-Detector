@@ -10,6 +10,8 @@ dofile "model.lua"
 dofile "train.lua"
 dofile "test.lua"
 
+torch.setnumthreads(4)
+
 dateTable = os.date("*t")
 resultDir =  "./result/" .. tostring(dateTable.year) .. "_" .. tostring(dateTable.month) .. "_" .. tostring(dateTable.day) .. "_" .. tostring(dateTable.hour) .. "_" .. tostring(dateTable.min) .. "_" .. tostring(dateTable.sec)
 os.execute("mkdir " .. resultDir)
