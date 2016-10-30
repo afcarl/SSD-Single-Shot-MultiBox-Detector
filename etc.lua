@@ -4,29 +4,29 @@ model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 score_dir = result_dir .. "score/"
 
-mode = "train"
+mode = "test"
 continue = false
 continue_iter = 0
 
 classNum = 21
 inputDim = 3
-imgSz = 300
+imgSz = 500
 trainSz = 17125 + 5011 + 4952
-thr = 0.7
+thr = 0.4
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
-m = 6
+m = 7
 scale_table = {}
 for k=1,m do
     table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-1) * (k-1))
 end
 ar_table = {1,2,1/2,3,1/3}
-fmSz = {38,19,10,5,3,1}
+fmSz = {63,32,16,8,4,2,1}
 
 lr = 1e-3
 wDecay = 5e-4
 mmt = 9e-1
-batchSz = 32
+batchSz = 8
 iterLimit = 6e4 - continue_iter
 iterLrDecay = 4e4 - continue_iter
 
@@ -48,7 +48,8 @@ table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[3],fmSz[3]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[4],fmSz[4]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[5],fmSz[5]):zero())
-table.insert(restored_box,torch.Tensor(5,4,fmSz[6],fmSz[6]):zero())
+table.insert(restored_box,torch.Tensor(6,4,fmSz[6],fmSz[6]):zero())
+table.insert(restored_box,torch.Tensor(5,4,fmSz[7],fmSz[7]):zero())
 
 for lid = 1,m do
        

@@ -32,7 +32,7 @@ do
 
         if i >= 24 then
             if i == 24 then
-                subseq:add(nn.SpatialMaxPooling(2,2,2,2))
+                subseq:add(nn.SpatialMaxPooling(2,2,2,2,1,1))
             elseif i == 31 then
                 subseq:add(nn.SpatialMaxPooling(3,3,1,1,1,1))
             else
@@ -130,15 +130,35 @@ next_fDim = 6*(classNum+4)
 subBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
 -------------------------
 mainBranch_5 = nn.Sequential()
-mainBranch_5:add(nn.SpatialAveragePooling(3,3))
+kernelSz = 1
+prev_fDim = 256
+next_fDim = 128
+mainBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
+mainBranch_5:add(nn.ReLU(true))
+kernelSz = 3
+prev_fDim = 128
+next_fDim = 256
+mainBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,2,2,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
 mainBranch_5:add(nn.ReLU(true))
 
 subBranch_6 = nn.Sequential()
+kernelSz = 3
+prev_fDim = 256
+next_fDim = 6*(classNum+4)
+subBranch_6:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
+--------------------------------
+mainBranch_6 = nn.Sequential()
+mainBranch_6:add(nn.SpatialAveragePooling(2,2))
+mainBranch_6:add(nn.ReLU(true))
+
+subBranch_7 = nn.Sequential()
 kernelSz = 1
 prev_fDim = 256
 next_fDim = 5*(classNum+4)
-subBranch_6:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
---------------------------------
+subBranch_7:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
+
+----------------------------
+
 model = nn.Sequential():add(VGGNet)
 
 concat = nn.ConcatTable()
@@ -183,6 +203,17 @@ concat:add(nn.SelectTable(3))
 concat:add(nn.SelectTable(4))
 concat:add(nn.SelectTable(5))
 concat:add(nn.Sequential():add(nn.SelectTable(6)):add(subBranch_6))
+concat:add(nn.Sequential():add(nn.SelectTable(6)):add(mainBranch_6))
+model:add(concat)
+
+concat = nn.ConcatTable()
+concat:add(nn.SelectTable(1))
+concat:add(nn.SelectTable(2))
+concat:add(nn.SelectTable(3))
+concat:add(nn.SelectTable(4))
+concat:add(nn.SelectTable(5))
+concat:add(nn.SelectTable(6))
+concat:add(nn.Sequential():add(nn.SelectTable(7)):add(subBranch_7))
 model:add(concat)
 
 ---------------------------
