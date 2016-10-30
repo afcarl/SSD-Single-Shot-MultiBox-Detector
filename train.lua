@@ -68,6 +68,13 @@ function train(trainTarget, trainName)
                     class_error = 0
                     loc_error = 0
                    
+                    doBP = {}
+                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[1],fmSz[1]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[2],fmSz[2]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[3],fmSz[3]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,6,fmSz[4],fmSz[4]):zero())
+                    table.insert(doBP,torch.Tensor(curBatchDim,5,fmSz[5],fmSz[5]):zero())
+
                      --layer, batch, ar*classNum + ar*4, sz, sz
                     local outputs = model:forward(inputs)
                     tot_dfdo = {}
@@ -98,8 +105,8 @@ function train(trainTarget, trainName)
                             local xmin_ = xmin * (imgSz/imgWidth)
                             local ymax_ = ymax * (imgSz/imgHeight)
                             local ymin_ = ymin * (imgSz/imgHeight)
-                           
-                            --[===[ 
+                            
+                            --[===[
                             --for debug
                             local img = inputs[bid]
                             img = drawRectangle(img,xmin_,ymin_,xmax_,ymax_)
@@ -135,7 +142,7 @@ function train(trainTarget, trainName)
                                 yIdx = yIdx[1][1][xIdx]
                                 arIdx = arIdx[1][yIdx][xIdx]
                                 
-                                --[===[    
+                                --[===[
                                 --for debug
                                 local img = inputs[bid]
                                 local xmax = restored_box[lid][arIdx][1][yIdx][xIdx]
@@ -145,6 +152,7 @@ function train(trainTarget, trainName)
                                 img = drawRectangle(img,xmin,ymin,xmax,ymax)
                                 image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
                                 --]===]
+
                                 
                                 local tx = ((xmin_+xmax_)/2 - (restored_box[lid][arIdx][2][yIdx][xIdx]+restored_box[lid][arIdx][1][yIdx][xIdx])/2)/(restored_box[lid][arIdx][1][yIdx][xIdx]-restored_box[lid][arIdx][2][yIdx][xIdx])
                                 local ty = ((ymin_+ymax_)/2 - (restored_box[lid][arIdx][4][yIdx][xIdx]+restored_box[lid][arIdx][3][yIdx][xIdx])/2)/(restored_box[lid][arIdx][3][yIdx][xIdx]-restored_box[lid][arIdx][4][yIdx][xIdx])
@@ -157,7 +165,7 @@ function train(trainTarget, trainName)
                                 end
                                 
                                 --assign boxes whose IoU > 0.5
-                                local IoU_cut = IoU:gt(0.5)
+                                local IoU_cut = torch.cmul(IoU:gt(0.5),doBP[lid][bid]:ne(1))
                                 local IoU_cut_num = torch.sum(IoU_cut)
                                 
                                 local acoord = torch.reshape(torch.range(1,ar_num),ar_num,1,1):repeatTensor(1,fmSz[lid],fmSz[lid])
@@ -178,6 +186,7 @@ function train(trainTarget, trainName)
 
 
                                     table.insert(pos_set,{lid,acoord[pid],ycoord[pid],xcoord[pid],label,tx,ty,tw,th})
+                                    doBP[lid][bid][arIdx][yIdx][xIdx] = 1
                                 end
 
                                                                 
@@ -211,6 +220,7 @@ function train(trainTarget, trainName)
                             local arIdx = pos_candidate[2]
                             local yIdx = pos_candidate[3]
                             local xIdx = pos_candidate[4]
+                            doBP[lid][bid][arIdx][yIdx][xIdx] = 1
 
                         end
 
@@ -229,6 +239,7 @@ function train(trainTarget, trainName)
                             local x = neg_candidate[nid][4]
                             local label = neg_candidate[nid][5]
 
+                            doBP[lid][bid][aid][y][x] = -1
                             table.insert(neg_set,{lid,aid,y,x,label})
                         end
                     
@@ -359,8 +370,10 @@ function train(trainTarget, trainName)
 
 
                     end
-                    
+                        
+
                     model:backward(inputs,tot_dfdo)
+
                     gradParams:div(curBatchDim)
                     class_error = class_error/curBatchDim
                     loc_error = loc_error/curBatchDim

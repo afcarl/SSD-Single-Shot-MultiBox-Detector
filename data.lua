@@ -61,12 +61,12 @@ function load_data(mode)
         dataNum = 3
     elseif mode == "test" then
         print("test data loading...")
-
-        db_dir_ = db_dir .. "VOC2012_test/"
+        db_dir_ = db_dir .. "VOC2012_trainval/"
         imgDir = db_dir_ .. 'JPEGImages/'
-        f = io.popen('ls ' .. imgDir)
         testFileList = {}
-        for name in f:lines() do table.insert(testFileList,imgDir .. name) end
+        for line in io.lines("/home/mks0601/workspace/Data/VOCdevkit/VOC2012_trainval/ImageSets/Main/val.txt") do
+            table.insert(testFileList,imgDir .. line .. ".jpg")
+        end
 
         return {}, testFileList
     end

@@ -10,23 +10,23 @@ continue_iter = 0
 
 classNum = 21
 inputDim = 3
-imgSz = 500
+imgSz = 300
 trainSz = 17125 + 5011 + 4952
-thr = 0.4
+thr = 0.7
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
-m = 6
+m = 5
 scale_table = {}
 for k=1,m do
     table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-1) * (k-1))
 end
-ar_table = {1,2,1/2,3,1/3}
-fmSz = {32,16,8,4,2,1}
+ar_table = {1,2,3,1/2,1/3}
+fmSz = {19,10,5,3,1}
 
 lr = 1e-3
 wDecay = 5e-4
 mmt = 9e-1
-batchSz = 8
+batchSz = 32
 iterLimit = 6e4 - continue_iter
 iterLrDecay = 4e4 - continue_iter
 
@@ -47,8 +47,7 @@ table.insert(restored_box,torch.Tensor(6,4,fmSz[1],fmSz[1]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[3],fmSz[3]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[4],fmSz[4]):zero())
-table.insert(restored_box,torch.Tensor(6,4,fmSz[5],fmSz[5]):zero())
-table.insert(restored_box,torch.Tensor(5,4,fmSz[6],fmSz[6]):zero())
+table.insert(restored_box,torch.Tensor(5,4,fmSz[5],fmSz[5]):zero())
 
 for lid = 1,m do
        
@@ -56,24 +55,22 @@ for lid = 1,m do
        for c = 1,fmSz[lid] do
             local xCenter = (c-1+0.5)/fmSz[lid]
             local yCenter = (r-1+0.5)/fmSz[lid]
+            for aid = 1,table.getn(ar_table)+1 do
 
-            local ar_num = table.getn(ar_table)+1
-            if lid == m then
-                ar_num = table.getn(ar_table)
-            end
-
-            for aid = 1,ar_num do
-                if lid == m then --last layer
-                    ar_factor = ar_table[aid]
-                    scale_factor = scale_table[lid]
-
-                elseif lid < m then --before last layer
+                if lid < m then
                     if aid <= table.getn(ar_table) then
                         ar_factor = ar_table[aid]
                         scale_factor = scale_table[lid]
                     else
                         ar_factor = 1
                         scale_factor = math.sqrt(scale_table[lid] * scale_table[lid+1])
+                    end
+                else
+                    if aid <= table.getn(ar_table) then
+                        ar_factor = ar_table[aid]
+                        scale_factor = scale_table[lid]
+                    else
+                        goto nextCell
                     end
                 end
 
@@ -90,7 +87,6 @@ for lid = 1,m do
         end
     end
 end
-
 function drawRectangle(img,xmin,ymin,xmax,ymax)
     
     img_origin = img:clone()

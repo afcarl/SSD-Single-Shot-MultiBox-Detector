@@ -7,8 +7,7 @@ require 'module/normalLinear'
 require 'sys'
 dofile 'etc.lua'
 
-do
-    local a = 3
-    print(a)
+
+for line in io.lines("/home/mks0601/workspace/Data/VOCdevkit/VOC2012_trainval/ImageSets/Main/val.txt") do
+    print(line)
 end
-print(a)

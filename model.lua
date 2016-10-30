@@ -8,31 +8,25 @@ dofile 'etc.lua'
 
 
 ----------------------------
+VGG_pretrain = torch.load("/home/mks0601/workspace/Model/vgg_pretrain.t7")
 
-do 
-    local VGG_pretrain = torch.load("/home/mks0601/workspace/Model/vgg_pretrain.t7")
+VGGNet = nn.Sequential()
 
-    VGGNet = nn.Sequential()
+for i = 1,31 do
 
-    --23th layer is conv4_3
-    for i = 1,31 do
-        
-            if i == 5 or i == 10  then
-                VGGNet:add(nn.SpatialMaxPooling(2,2,2,2))
-            elseif i == 17 then
-                VGGNet:add(nn.SpatialMaxPooling(2,2,2,2,1,1))
-            elseif i == 24 then
-                VGGNet:add(nn.SpatialMaxPooling(2,2,2,2,1,1))
-            elseif i == 31 then
-                VGGNet:add(nn.SpatialMaxPooling(3,3,1,1,1,1))
-            else
-                VGGNet:add(VGG_pretrain:get(i))
-            end
-
+    if i == 5 or i == 10  or i == 24  then
+        VGGNet:add(nn.SpatialMaxPooling(2,2,2,2))
+    elseif i == 17 then
+        VGGNet:add(nn.SpatialMaxPooling(2,2,2,2,1,1))
+    elseif i == 31 then
+        VGGNet:add(nn.SpatialMaxPooling(3,3,1,1,1,1))
+    else
+        VGGNet:add(VGG_pretrain:get(i))
     end
-    VGG_pretrain = nil
+
 end
-collectgarbage();
+
+
 ------------------------------
 mainBranch_1 = nn.Sequential()
 
@@ -107,35 +101,15 @@ next_fDim = 6*(classNum+4)
 subBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
 -------------------------
 mainBranch_5 = nn.Sequential()
-kernelSz = 1
-prev_fDim = 256
-next_fDim = 128
-mainBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
-mainBranch_5:add(nn.ReLU(true))
-kernelSz = 3
-prev_fDim = 128
-next_fDim = 256
-mainBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,2,2,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
+mainBranch_5:add(nn.SpatialAveragePooling(3,3))
 mainBranch_5:add(nn.ReLU(true))
 
 subBranch_6 = nn.Sequential()
-kernelSz = 3
-prev_fDim = 256
-next_fDim = 6*(classNum+4)
-subBranch_6:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
---------------------------------
-mainBranch_6 = nn.Sequential()
-mainBranch_6:add(nn.SpatialAveragePooling(2,2))
-mainBranch_6:add(nn.ReLU(true))
-
-subBranch_7 = nn.Sequential()
 kernelSz = 1
 prev_fDim = 256
 next_fDim = 5*(classNum+4)
-subBranch_7:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
-
-----------------------------
-
+subBranch_6:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
+--------------------------------
 model = nn.Sequential():add(VGGNet):add(mainBranch_1)
 
 concat = nn.ConcatTable()
@@ -170,24 +144,12 @@ concat:add(nn.SelectTable(2))
 concat:add(nn.SelectTable(3))
 concat:add(nn.SelectTable(4))
 concat:add(nn.Sequential():add(nn.SelectTable(5)):add(subBranch_6))
-concat:add(nn.Sequential():add(nn.SelectTable(5)):add(mainBranch_6))
-model:add(concat)
-
-concat = nn.ConcatTable()
-concat:add(nn.SelectTable(1))
-concat:add(nn.SelectTable(2))
-concat:add(nn.SelectTable(3))
-concat:add(nn.SelectTable(4))
-concat:add(nn.SelectTable(5))
-concat:add(nn.Sequential():add(nn.SelectTable(6)):add(subBranch_7))
 model:add(concat)
 
 ---------------------------
 crossEntropy = nn.CrossEntropyCriterion()
 smoothL1 = nn.SmoothL1Criterion()
 smoothL1.sizeAverage = false
-
-print(model)
 
 cudnn.convert(model, cudnn)
 model:cuda()
