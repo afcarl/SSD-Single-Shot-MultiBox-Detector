@@ -15,13 +15,13 @@ trainSz = 17125 + 5011 + 4952
 thr = 0.4
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
-m = 7
+m = 6
 scale_table = {}
 for k=1,m do
     table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-1) * (k-1))
 end
 ar_table = {1,2,1/2,3,1/3}
-fmSz = {63,32,16,8,4,2,1}
+fmSz = {32,16,8,4,2,1}
 
 lr = 1e-3
 wDecay = 5e-4
@@ -43,13 +43,12 @@ function str_split(inputstr, sep)
 end
   
 restored_box = {} --xmax xmin ymax ymin
-table.insert(restored_box,torch.Tensor(3,4,fmSz[1],fmSz[1]):zero())
+table.insert(restored_box,torch.Tensor(6,4,fmSz[1],fmSz[1]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[3],fmSz[3]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[4],fmSz[4]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[5],fmSz[5]):zero())
-table.insert(restored_box,torch.Tensor(6,4,fmSz[6],fmSz[6]):zero())
-table.insert(restored_box,torch.Tensor(5,4,fmSz[7],fmSz[7]):zero())
+table.insert(restored_box,torch.Tensor(5,4,fmSz[6],fmSz[6]):zero())
 
 for lid = 1,m do
        
@@ -59,18 +58,16 @@ for lid = 1,m do
             local yCenter = (r-1+0.5)/fmSz[lid]
 
             local ar_num = table.getn(ar_table)+1
-            if lid == 1  then
-                ar_num = 3
-            elseif lid == m then
+            if lid == m then
                 ar_num = table.getn(ar_table)
             end
 
             for aid = 1,ar_num do
-                if lid == 1 or lid == m then --first layer or last layer
+                if lid == m then --last layer
                     ar_factor = ar_table[aid]
                     scale_factor = scale_table[lid]
 
-                elseif lid < m then --second ~ before last layer
+                elseif lid < m then --before last layer
                     if aid <= table.getn(ar_table) then
                         ar_factor = ar_table[aid]
                         scale_factor = scale_table[lid]

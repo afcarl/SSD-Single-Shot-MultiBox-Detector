@@ -110,9 +110,7 @@ function train(trainTarget, trainName)
                             
                             for lid = 1,m do
                                 
-                                if lid == 1 then
-                                    ar_num = 3
-                                elseif lid < m then
+                                if lid < m then
                                     ar_num = 6
                                 else
                                     ar_num = 5
@@ -278,9 +276,7 @@ function train(trainTarget, trainName)
                             image.save(tostring(label) .. "_" .. tostring(bid) .. "_" .. tostring(pid) .. ".jpg",img)
                             --]===]
                             
-                            if lid == 1 then
-                                ar_num = 3
-                            elseif lid < m then
+                            if lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -330,9 +326,7 @@ function train(trainTarget, trainName)
                             local class_grad = class_dfdo[pid]
                             local loc_grad = loc_dfdo[pid]
                             
-                            if lid == 1 then
-                                ar_num = 3
-                            elseif lid < m then
+                            if lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -353,9 +347,7 @@ function train(trainTarget, trainName)
                             local xid = neg_set[nid][4]
                             local class_grad = class_dfdo[table.getn(pos_set) + nid]
                             
-                            if lid == 1 then
-                                ar_num = 3
-                            elseif lid < m then
+                            if lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
