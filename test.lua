@@ -79,17 +79,16 @@ end
 
 function test(testTarget, testName)
     
+    print("testing start!")
+
     os.execute('rm -f ' .. fig_dir .. '*') 
-    os.execute('rm -f ' .. score_dir .. '*') 
-  
+       
     model:evaluate()
 
     testDataSz = table.getn(testName)
     local startTime = sys.clock() 
     for t = 1,testDataSz do
         
-        print(tostring(t) .. "/" .. tostring(testDataSz) ..  "th frame is in testing...")
-
         input = image.load(testName[t])
         input = image.scale(input,imgSz,imgSz)
         target = testTarget[t]
@@ -117,11 +116,11 @@ function test(testTarget, testName)
             
                 --conf thresholding
                 local conf = output[lid][{{1},{(aid-1)*classNum+1,aid*classNum},{},{}}]
-                conf = nn.SpatialSoftMax():cuda():forward(conf)
+                conf = SpatialSM:forward(conf)
                 conf = conf[1]
 
                 conf,label = torch.max(conf,1)
-                conf_mask = torch.cmul(conf:gt(thr),label:ne(21))
+                conf_mask = torch.cmul(conf:gt(thr),label:ne(negId))
                 conf_mask = conf_mask:type('torch.ByteTensor')
                 
                 conf = conf[conf_mask]:type('torch.FloatTensor')
@@ -133,7 +132,6 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
-                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -150,7 +148,6 @@ function test(testTarget, testName)
                 xmin = torch.cmax(newCenterX - newWidth/2,torch.Tensor(rest_box_num):fill(1))
                 ymax = torch.cmin(newCenterY + newHeight/2,torch.Tensor(rest_box_num):fill(imgSz))
                 ymin = torch.cmax(newCenterY - newHeight/2,torch.Tensor(rest_box_num):fill(1))
-                --]===]
                 
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
@@ -180,7 +177,7 @@ function test(testTarget, testName)
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open(result_dir .. "score/comp3_det_test_" .. classList[lid] .. ".txt","a")
+            fp_result = io.open(resultDir .. "/comp3_det_test_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
 
                 for rid = 1,resultBB[lid]:size()[1] do
@@ -206,7 +203,7 @@ function test(testTarget, testName)
 
 
         --draw BB
-        image.save(fig_dir .. tostring(t) .. ".jpg",input)
+        image.save(tostring(t) .. ".jpg",input)
         
     end
     local endTime = sys.clock()

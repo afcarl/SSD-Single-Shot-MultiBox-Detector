@@ -2,17 +2,17 @@ db_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/"
 result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
-score_dir = result_dir .. "score/"
 
-mode = "test"
-continue = false
-continue_iter = 0
+mode = "train"
+continue = true
+continue_iter = 18000 + 34000
 
 classNum = 21
+negId = 21
 inputDim = 3
 imgSz = 300
-trainSz = 17125 + 5011 + 4952
-thr = 0.7
+trainSz = 17125 --+ 5011 + 4952
+thr = 0.01
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
 m = 5
@@ -87,6 +87,34 @@ for lid = 1,m do
         end
     end
 end
+
+function parse_idx(idx)
+    
+    local lid, aid, yid, xid
+    idx = idx-1
+
+    for lid = 1,m do
+        
+        if lid < m then
+            ar_num = 6
+        else
+            ar_num = 5
+        end
+
+        if idx < ar_num*fmSz[lid]*fmSz[lid] then
+        
+            aid = math.floor(idx/(fmSz[lid]*fmSz[lid]))
+            yid = math.floor((idx%(fmSz[lid]*fmSz[lid]))/fmSz[lid])
+            xid = idx%(fmSz[lid]*fmSz[lid])%fmSz[lid]
+
+            return lid,aid+1,yid+1,xid+1
+        end
+
+        idx = idx - ar_num*fmSz[lid]*fmSz[lid]
+    end
+
+end
+
 function drawRectangle(img,xmin,ymin,xmax,ymax)
     
     img_origin = img:clone()

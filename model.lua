@@ -148,12 +148,17 @@ model:add(concat)
 
 ---------------------------
 crossEntropy = nn.CrossEntropyCriterion()
+crossEntropy.nll.sizeAverage = false
 smoothL1 = nn.SmoothL1Criterion()
 smoothL1.sizeAverage = false
+SpatialLSM = cudnn.SpatialLogSoftMax()
+SpatialSM = cudnn.SpatialSoftMax()
 
 cudnn.convert(model, cudnn)
 model:cuda()
 crossEntropy:cuda()
 smoothL1:cuda()
+SpatialLSM:cuda()
+SpatialSM:cuda()
 cudnn.fastest = true
 cudnn.benchmark = true

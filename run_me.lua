@@ -1,6 +1,7 @@
 require 'torch'
 require 'cunn'
 
+torch.setnumthreads(6)
 torch.setdefaulttensortype('torch.FloatTensor')
 math.randomseed(os.time())
 
