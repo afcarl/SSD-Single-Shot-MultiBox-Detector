@@ -148,7 +148,7 @@ model:add(concat)
 
 ---------------------------
 crossEntropy = nn.CrossEntropyCriterion()
---crossEntropy.nll.sizeAverage = false
+crossEntropy.nll.sizeAverage = false
 smoothL1 = nn.SmoothL1Criterion()
 smoothL1.sizeAverage = false
 SpatialLSM = cudnn.SpatialLogSoftMax()

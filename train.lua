@@ -412,8 +412,8 @@ function train(trainTarget, trainName)
                         
                         classOutput = classOutput:cuda()
                         classGT = classGT:cuda()
-                        class_error = class_error + crossEntropy:forward(classOutput,classGT)--/(table.getn(pos_set)+table.getn(neg_set))
-                        class_dfdo = crossEntropy:backward(classOutput,classGT)--/(table.getn(pos_set)+table.getn(neg_set))
+                        class_error = class_error + crossEntropy:forward(classOutput,classGT)/(table.getn(pos_set)+table.getn(neg_set))
+                        class_dfdo = crossEntropy:backward(classOutput,classGT)/(table.getn(pos_set)+table.getn(neg_set))
                         
                                                 
                         locOutput = locOutput:cuda()
