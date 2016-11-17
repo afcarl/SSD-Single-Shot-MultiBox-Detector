@@ -117,10 +117,10 @@ function test(testTarget, testName)
                 --conf thresholding
                 local conf = output[lid][{{1},{(aid-1)*classNum+1,aid*classNum},{},{}}]
                 conf = SpatialSM:forward(conf)
-                conf = conf[1]
+                conf = conf[1][{{1,classNum-1},{},{}}]
 
                 conf,label = torch.max(conf,1)
-                conf_mask = torch.cmul(conf:gt(thr),label:ne(negId))
+                conf_mask = conf:gt(thr)
                 conf_mask = conf_mask:type('torch.ByteTensor')
                 
                 conf = conf[conf_mask]:type('torch.FloatTensor')

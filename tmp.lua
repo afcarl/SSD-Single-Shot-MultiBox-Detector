@@ -5,7 +5,7 @@ require 'cunn'
 require 'module/normalConv'
 require 'module/normalLinear'
 require 'sys'
-dofile 'etc.lua'
+--dofile 'etc.lua'
 
 
 --[===[
@@ -25,5 +25,19 @@ print(c:size()[1])
 --]===]
 --
 --
-input = torch.CudaTensor(2,20,7,7):fill(0.5)
-print(cudnn.SpatialLogSoftMax:cuda():forward(input))
+input = torch.CudaTensor(1,20,7,7):fill(0.5)
+--print(cudnn.SpatialLogSoftMax:cuda():forward(input))
+
+--target = torch.Tensor(1,1):fill(1)
+--ce = nn.CrossEntropyCriterion():cuda()
+--print(ce:forward(input,target))
+--
+
+a = torch.Tensor({1,2,3})
+b = torch.Tensor({4,5,6})
+c = torch.Tensor({1,2,3,4,5})
+
+for a = 1,0 do
+    print(12)    
+end
+print(a)

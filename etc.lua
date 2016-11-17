@@ -4,15 +4,15 @@ model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
 mode = "train"
-continue = true
-continue_iter = 18000 + 34000
+continue = false
+continue_iter = 0
 
 classNum = 21
 negId = 21
 inputDim = 3
 imgSz = 300
 trainSz = 17125 --+ 5011 + 4952
-thr = 0.01
+thr = 0.18
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
 m = 5
@@ -22,6 +22,16 @@ for k=1,m do
 end
 ar_table = {1,2,3,1/2,1/3}
 fmSz = {19,10,5,3,1}
+tot_box_num = 0
+for lid = 1,m do
+    if lid < m then
+        ar_num = 6
+    else
+        ar_num = 5
+    end
+
+    tot_box_num = tot_box_num + ar_num*fmSz[lid]*fmSz[lid]
+end
 
 lr = 1e-3
 wDecay = 5e-4
@@ -114,6 +124,28 @@ function parse_idx(idx)
     end
 
 end
+
+function combine_idx(lid,aid,yid,xid)
+    
+    aid = aid-1
+    yid = yid-1
+    xid = xid-1
+
+    if lid == 1 then
+        return (aid*fmSz[lid]*fmSz[lid] + yid*fmSz[lid] + xid) + 1
+    end
+    
+    local result = 0
+    for l = 1,lid-1 do
+        result = result + 6*fmSz[l]*fmSz[l]
+    end
+    
+    result = result + aid*fmSz[lid]*fmSz[lid] + yid*fmSz[lid] + xid
+
+    return result+1
+
+end
+
 
 function drawRectangle(img,xmin,ymin,xmax,ymax)
     
