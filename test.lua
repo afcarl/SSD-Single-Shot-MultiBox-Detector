@@ -132,6 +132,7 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
+                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -148,7 +149,9 @@ function test(testTarget, testName)
                 xmin = torch.cmax(newCenterX - newWidth/2,torch.Tensor(rest_box_num):fill(1))
                 ymax = torch.cmin(newCenterY + newHeight/2,torch.Tensor(rest_box_num):fill(imgSz))
                 ymin = torch.cmax(newCenterY - newHeight/2,torch.Tensor(rest_box_num):fill(1))
+                --]===]
                 
+
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
                     table.insert(resultBB[label[rid]],{xmin[rid],ymin[rid],xmax[rid],ymax[rid],conf[rid]})
