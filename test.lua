@@ -132,7 +132,6 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
-                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -145,11 +144,10 @@ function test(testTarget, testName)
                 local newWidth = torch.cmul(torch.exp(tw),(xmax-xmin))
                 local newHeight = torch.cmul(torch.exp(th),(ymax-ymin))
                 
-                xmax = torch.cmin(newCenterX + newWidth/2,torch.Tensor(rest_box_num):fill(imgSz))
-                xmin = torch.cmax(newCenterX - newWidth/2,torch.Tensor(rest_box_num):fill(1))
-                ymax = torch.cmin(newCenterY + newHeight/2,torch.Tensor(rest_box_num):fill(imgSz))
-                ymin = torch.cmax(newCenterY - newHeight/2,torch.Tensor(rest_box_num):fill(1))
-                --]===]
+                xmax = newCenterX + newWidth/2
+                xmin = newCenterX - newWidth/2
+                ymax = newCenterY + newHeight/2
+                ymin = newCenterY - newHeight/2
                 
 
                 --result save to table(before NMS)
@@ -160,7 +158,7 @@ function test(testTarget, testName)
             end
         end
         
-        
+
         --NMS for each class
         for lid = 1,classNum-1 do
             
@@ -174,15 +172,53 @@ function test(testTarget, testName)
                 resultTensor = resultTensor[idx:type('torch.ByteTensor')] 
                 resultTensor = torch.reshape(resultTensor,resultTensor:size()[1]/5,5)
                 resultBB[lid] = resultTensor
+                resultTensor = torch.cat(resultTensor,torch.Tensor(resultTensor:size()[1],1):fill(lid),2)
+                
+                --[===[
+                if lid == 1 then
+                    before_top_k = resultTensor
+                else
+                    before_top_k = torch.cat(before_top_k,resultTensor,1)
+                end
+                --]===]
+                
             end
-        end 
-          
+        end
+        
+        --[===[
+        --extract topk detection
+        if before_top_k:size()[1] > topk_num then
+            
+            for lid = 1,classNum-1 do
+                if type(resultBB[lid]) == 'userdata' then
+                    resultBB[lid] = false
+                end
+            end
+
+            after_top_k_val, after_top_k_idx = torch.reshape(before_top_k[{{},{5}}],before_top_k:size()[1]):topk(topk_num,true)
+
+            for tid = 1,topk_num do
+                local idx = after_top_k_idx[tid]
+                local lid = before_top_k[idx][6]
+                
+                if type(resultBB[lid]) ~= "table" then
+                    if type(resultBB[lid]) == 'boolean' then
+                        resultBB[lid] = torch.reshape(before_top_k[idx],1,before_top_k[idx]:size()[1])
+                    else
+                        resultBB[lid] = torch.cat(resultBB[lid],torch.reshape(before_top_k[idx],1,before_top_k[idx]:size()[1])
+,1)
+                    end
+                end
+
+            end
+        end
+        --]===]
 
         --result write to txt file
         for lid = 1,classNum-1 do
             fp_result = io.open(resultDir .. "/comp3_det_test_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
-
+                
                 for rid = 1,resultBB[lid]:size()[1] do
                     
                     local xmax = resultBB[lid][rid][3]
@@ -203,7 +239,6 @@ function test(testTarget, testName)
             end
             fp_result:close()
         end
-
 
         --draw BB
         image.save(tostring(t) .. ".jpg",input)

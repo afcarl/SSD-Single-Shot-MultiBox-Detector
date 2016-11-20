@@ -3,16 +3,17 @@ result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
-mode = "test"
+mode = "train"
 continue = false
-continue_iter = 0
+continue_iter = 5000
 
 classNum = 21
 negId = 21
 inputDim = 3
 imgSz = 300
 trainSz = 17125 --+ 5011 + 4952
-thr = 0.18
+thr = 0.17
+topk_num = 20
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 
 m = 5
@@ -87,10 +88,11 @@ for lid = 1,m do
                 local width = scale_factor*math.sqrt(ar_factor)
                 local height = scale_factor/math.sqrt(ar_factor)
 
-                restored_box[lid][aid][1][r][c] = math.min((xCenter + width/2) * (imgSz),imgSz)
-                restored_box[lid][aid][2][r][c] = math.max((xCenter - width/2) * (imgSz),1)
-                restored_box[lid][aid][3][r][c] = math.min((yCenter + height/2) * (imgSz),imgSz)
-                restored_box[lid][aid][4][r][c] = math.max((yCenter - height/2) * (imgSz),1)
+                
+                restored_box[lid][aid][1][r][c] = math.floor((xCenter + width/2)*(imgSz))+1
+                restored_box[lid][aid][2][r][c] = math.floor((xCenter - width/2)*(imgSz))+1
+                restored_box[lid][aid][3][r][c] = math.floor((yCenter + height/2)*(imgSz))+1
+                restored_box[lid][aid][4][r][c] = math.floor((yCenter - height/2)*(imgSz))+1
 
                 ::nextCell::
             end
@@ -147,12 +149,25 @@ function combine_idx(lid,aid,yid,xid)
 end
 
 
-function drawRectangle(img,xmin,ymin,xmax,ymax)
+function drawRectangle(img,xmin,ymin,xmax,ymax,color)
     
     img_origin = img:clone()
-    img[1][{{ymin,ymax},{xmin,xmax}}] = 255
-    img[2][{{ymin,ymax},{xmin,xmax}}] = 0
-    img[3][{{ymin,ymax},{xmin,xmax}}] = 0
+    
+    xmin = math.max(xmin,1)
+    ymin = math.max(ymin,1)
+    xmax = math.min(xmax,imgSz)
+    ymax = math.min(ymax,imgSz)
+    
+    if color == 'r' then
+        img[1][{{ymin,ymax},{xmin,xmax}}] = 255
+        img[2][{{ymin,ymax},{xmin,xmax}}] = 0
+        img[3][{{ymin,ymax},{xmin,xmax}}] = 0
+    elseif color == 'g' then
+        img[1][{{ymin,ymax},{xmin,xmax}}] = 0
+        img[2][{{ymin,ymax},{xmin,xmax}}] = 255
+        img[3][{{ymin,ymax},{xmin,xmax}}] = 0
+    end
+
     
     if ymin+2 < ymax-2 then
         ymin = ymin+2

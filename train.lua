@@ -127,7 +127,7 @@ function train(trainTarget, trainName)
                             --[===[
                             --for debug
                             local img = inputs[bid]
-                            img = drawRectangle(img,xmin_,ymin_,xmax_,ymax_)
+                            img = drawRectangle(img,xmin_,ymin_,xmax_,ymax_,"r")
                             image.save(tostring(bid) .. "_" .. tostring(gid) .. ".jpg",img)
                             --]===]
                             
@@ -143,14 +143,14 @@ function train(trainTarget, trainName)
                                 end
                                 
                                 --assign one box to each GT(best match box)
-                                local minXMax = torch.cmin(torch.Tensor(ar_num,fmSz[lid],fmSz[lid],1):fill(xmax_),restored_box[lid][{{},{1},{},{}}])
-                                local maxXMin = torch.cmax(torch.Tensor(ar_num,fmSz[lid],fmSz[lid],1):fill(xmin_),restored_box[lid][{{},{2},{},{}}])
-                                local minYMAX = torch.cmin(torch.Tensor(ar_num,fmSz[lid],fmSz[lid],1):fill(ymax_),restored_box[lid][{{},{3},{},{}}])
-                                local maxYMIN = torch.cmax(torch.Tensor(ar_num,fmSz[lid],fmSz[lid],1):fill(ymin_),restored_box[lid][{{},{4},{},{}}])
+                                local minXMax = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmax_),restored_box[lid][{{},{1},{},{}}])
+                                local maxXMin = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmin_),restored_box[lid][{{},{2},{},{}}])
+                                local minYMAX = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymax_),restored_box[lid][{{},{3},{},{}}])
+                                local maxYMIN = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymin_),restored_box[lid][{{},{4},{},{}}])
                                 local box_area = torch.cmul((restored_box[lid][{{},{1},{},{}}] - restored_box[lid][{{},{2},{},{}}]), (restored_box[lid][{{},{3},{},{}}] - restored_box[lid][{{},{4},{},{}}]))
 
                                 local area_inter = torch.cmul(torch.cmax(minXMax - maxXMin,0), torch.cmax(minYMAX - maxYMIN,0))
-                                local area_union = torch.Tensor(ar_num,fmSz[lid],fmSz[lid],1):fill(gt_area) + box_area - area_inter
+                                local area_union = torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(gt_area) + box_area - area_inter
                                 local IoU = torch.cdiv(area_inter,area_union)
                                 IoU = torch.reshape(IoU,ar_num,fmSz[lid],fmSz[lid])
 
@@ -168,7 +168,7 @@ function train(trainTarget, trainName)
                                 local xmin = restored_box[lid][arIdx][2][yIdx][xIdx]
                                 local ymax = restored_box[lid][arIdx][3][yIdx][xIdx]
                                 local ymin = restored_box[lid][arIdx][4][yIdx][xIdx]
-                                img = drawRectangle(img,xmin,ymin,xmax,ymax)
+                                img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
                                 image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
                                 --]===]
                                 
@@ -213,7 +213,7 @@ function train(trainTarget, trainName)
                             local xmin = restored_box[lid][arIdx][2][yIdx][xIdx]
                             local ymax = restored_box[lid][arIdx][3][yIdx][xIdx]
                             local ymin = restored_box[lid][arIdx][4][yIdx][xIdx]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax)
+                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
                             image.save(tostring(bid) .. "_" .. tostring(gid) ..  ".jpg",img)
                             --]===]
 
@@ -276,7 +276,7 @@ function train(trainTarget, trainName)
                             local xmin = restored_box[lid][aid][2][yid][xid]
                             local ymax = restored_box[lid][aid][3][yid][xid]
                             local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax)
+                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"g")
                             image.save("pos_" .. tostring(bid) .. "_" .. tostring(pid) .. ".jpg",img)
                         end
                         --]===]
@@ -339,12 +339,11 @@ function train(trainTarget, trainName)
                             local xmin = restored_box[lid][aid][2][yid][xid]
                             local ymax = restored_box[lid][aid][3][yid][xid]
                             local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax)
+                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
                             image.save("neg" .. tostring(bid) .. "_" .. tostring(nid) .. ".jpg",img)
                         end
                         --]===]
                         
-
                         --final sum up gradient 
                         --class gradient
                         local classOutput = torch.Tensor(table.getn(pos_set)+table.getn(neg_set),classNum)
@@ -412,8 +411,8 @@ function train(trainTarget, trainName)
                         
                         classOutput = classOutput:cuda()
                         classGT = classGT:cuda()
-                        class_error = class_error + crossEntropy:forward(classOutput,classGT)/(table.getn(pos_set)+table.getn(neg_set))
-                        class_dfdo = crossEntropy:backward(classOutput,classGT)/(table.getn(pos_set)+table.getn(neg_set))
+                        class_error = class_error + crossEntropy:forward(classOutput,classGT)/table.getn(pos_set)
+                        class_dfdo = crossEntropy:backward(classOutput,classGT)/table.getn(pos_set)
                         
                                                 
                         locOutput = locOutput:cuda()
