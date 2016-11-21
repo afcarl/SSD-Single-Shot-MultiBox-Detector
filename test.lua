@@ -87,7 +87,7 @@ function test(testTarget, testName)
 
     testDataSz = table.getn(testName)
     local startTime = sys.clock() 
-    for t = 1,testDataSz do
+    for t = 1,30 do
         
         input = image.load(testName[t])
         input = image.scale(input,imgSz,imgSz)
@@ -106,7 +106,9 @@ function test(testTarget, testName)
 
         for lid = 1,m do
            
-            if lid < m then
+            if lid == 1 then
+                ar_num = 4
+            elseif lid < m then
                 ar_num = 6
             else
                 ar_num = 5
@@ -117,10 +119,10 @@ function test(testTarget, testName)
                 --conf thresholding
                 local conf = output[lid][{{1},{(aid-1)*classNum+1,aid*classNum},{},{}}]
                 conf = SpatialSM:forward(conf)
-                conf = conf[1][{{1,classNum-1},{},{}}]
+                conf = conf[1][{{1,classNum},{},{}}]
 
                 conf,label = torch.max(conf,1)
-                conf_mask = conf:gt(thr)
+                conf_mask = torch.cmul(conf:gt(thr),label:ne(negId))
                 conf_mask = conf_mask:type('torch.ByteTensor')
                 
                 conf = conf[conf_mask]:type('torch.FloatTensor')
@@ -148,7 +150,6 @@ function test(testTarget, testName)
                 xmin = newCenterX - newWidth/2
                 ymax = newCenterY + newHeight/2
                 ymin = newCenterY - newHeight/2
-                
 
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
@@ -173,7 +174,7 @@ function test(testTarget, testName)
                 resultTensor = torch.reshape(resultTensor,resultTensor:size()[1]/5,5)
                 resultBB[lid] = resultTensor
                 resultTensor = torch.cat(resultTensor,torch.Tensor(resultTensor:size()[1],1):fill(lid),2)
-                
+               
                 --[===[
                 if lid == 1 then
                     before_top_k = resultTensor
@@ -233,7 +234,7 @@ function test(testTarget, testName)
                     fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
 
                                        
-                    input = drawRectangle(input,xmin,ymin,xmax,ymax)
+                    input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")
 
                 end
             end

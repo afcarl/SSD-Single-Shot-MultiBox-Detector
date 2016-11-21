@@ -23,8 +23,11 @@ if mode == "train" then
     end
 
     trainTarget, trainName = load_data("train")
+    testTarget, testName = load_data("test")
+
     while tot_iter <= iterLimit do
         train(trainTarget, trainName)
+        test(testTarget,testName)
     end
 end
 

@@ -68,17 +68,30 @@ function train(trainTarget, trainName)
                     class_error = 0
                     loc_error = 0
                     
+                    final_conf_output = {}
+                    final_conf_target = {}
+                    final_loc_output = {}
+                    final_loc_target = {}
+
                     --1: pos, 0: initial
                     isPos = {}
-                    table.insert(isPos,torch.Tensor(6,fmSz[1],fmSz[1]):zero())
+                    table.insert(isPos,torch.Tensor(4,fmSz[1],fmSz[1]):zero())
                     table.insert(isPos,torch.Tensor(6,fmSz[2],fmSz[2]):zero())
                     table.insert(isPos,torch.Tensor(6,fmSz[3],fmSz[3]):zero())
                     table.insert(isPos,torch.Tensor(6,fmSz[4],fmSz[4]):zero())
-                    table.insert(isPos,torch.Tensor(5,fmSz[5],fmSz[5]):zero())
+                    table.insert(isPos,torch.Tensor(6,fmSz[5],fmSz[5]):zero())
+                    table.insert(isPos,torch.Tensor(5,fmSz[6],fmSz[6]):zero())
                     
+                    tot_dfdo = {}
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,4*(4+classNum),fmSz[1],fmSz[1]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[2],fmSz[2]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[3],fmSz[3]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[4],fmSz[4]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[5],fmSz[5]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,5*(4+classNum),fmSz[6],fmSz[6]):zero())
+
 
                     neg_candidate_loss = torch.Tensor(tot_box_num):zero()
-                    
                     pos_candidate_iou = torch.Tensor(tot_box_num):zero()
                     pos_candidate_label = torch.Tensor(tot_box_num):zero()
                     pos_candidate_xmax = torch.Tensor(tot_box_num):zero()
@@ -90,7 +103,7 @@ function train(trainTarget, trainName)
 
                     --layer, batch, ar*classNum + ar*4, sz, sz
                     local outputs = model:forward(inputs)
-                    tot_dfdo = {}
+                    
 
                     for bid = 1,curBatchDim do
 
@@ -98,8 +111,6 @@ function train(trainTarget, trainName)
                             isPos[lid]:zero()
                         end
                         pos_candidate_iou:zero()
-
-                        
 
                         local target = targets[bid]
                         local pos_set = {}
@@ -136,7 +147,9 @@ function train(trainTarget, trainName)
 
                             for lid = 1,m do
                                 
-                                if lid < m then
+                                if lid == 1 then
+                                    ar_num = 4
+                                elseif lid < m then
                                     ar_num = 6
                                 else
                                     ar_num = 5
@@ -154,32 +167,32 @@ function train(trainTarget, trainName)
                                 local IoU = torch.cdiv(area_inter,area_union)
                                 IoU = torch.reshape(IoU,ar_num,fmSz[lid],fmSz[lid])
 
-                                local val_1,arIdx = torch.max(IoU,1)
-                                local val_2,yIdx = torch.max(val_1,2)
-                                local val_3,xIdx = torch.max(val_2,3)
-                                xIdx = xIdx[1][1][1]
-                                yIdx = yIdx[1][1][xIdx]
-                                arIdx = arIdx[1][yIdx][xIdx]
+                                local val_1,aid = torch.max(IoU,1)
+                                local val_2,yid = torch.max(val_1,2)
+                                local val_3,xid = torch.max(val_2,3)
+                                xid = xid[1][1][1]
+                                yid = yid[1][1][xid]
+                                aid = aid[1][yid][xid]
                                 
                                 --[===[
                                 --for debug
                                 local img = inputs[bid]
-                                local xmax = restored_box[lid][arIdx][1][yIdx][xIdx]
-                                local xmin = restored_box[lid][arIdx][2][yIdx][xIdx]
-                                local ymax = restored_box[lid][arIdx][3][yIdx][xIdx]
-                                local ymin = restored_box[lid][arIdx][4][yIdx][xIdx]
+                                local xmax = restored_box[lid][aid][1][yid][xid]
+                                local xmin = restored_box[lid][aid][2][yid][xid]
+                                local ymax = restored_box[lid][aid][3][yid][xid]
+                                local ymin = restored_box[lid][aid][4][yid][xid]
                                 img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
                                 image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
                                 --]===]
                                 
-                                local tx = ((xmin_+xmax_)/2 - (restored_box[lid][arIdx][2][yIdx][xIdx]+restored_box[lid][arIdx][1][yIdx][xIdx])/2)/(restored_box[lid][arIdx][1][yIdx][xIdx]-restored_box[lid][arIdx][2][yIdx][xIdx])
-                                local ty = ((ymin_+ymax_)/2 - (restored_box[lid][arIdx][4][yIdx][xIdx]+restored_box[lid][arIdx][3][yIdx][xIdx])/2)/(restored_box[lid][arIdx][3][yIdx][xIdx]-restored_box[lid][arIdx][4][yIdx][xIdx])
-                                local tw = math.log((xmax_-xmin_)/(restored_box[lid][arIdx][1][yIdx][xIdx]-restored_box[lid][arIdx][2][yIdx][xIdx]))
-                                local th = math.log((ymax_-ymin_)/(restored_box[lid][arIdx][3][yIdx][xIdx]-restored_box[lid][arIdx][4][yIdx][xIdx]))
+                                local tx = ((xmin_+xmax_)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid])
+                                local ty = ((ymin_+ymax_)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid])
+                                local tw = math.log((xmax_-xmin_)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
+                                local th = math.log((ymax_-ymin_)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
                                 
-                                if IoU[arIdx][yIdx][xIdx] > max_pos_score then
-                                    pos_best_match = {lid,arIdx,yIdx,xIdx,label,tx,ty,tw,th}
-                                    max_pos_score = IoU[arIdx][yIdx][xIdx]
+                                if IoU[aid][yid][xid] > max_pos_score then
+                                    pos_best_match = {lid,aid,yid,xid,label,tx,ty,tw,th}
+                                    max_pos_score = IoU[aid][yid][xid]
                                 end
                                 
                                 --assign boxes whose IoU > 0.5
@@ -201,18 +214,23 @@ function train(trainTarget, trainName)
                             --pos assign(best match)
                             table.insert(pos_set,pos_best_match)
                             local lid = pos_best_match[1]
-                            local arIdx = pos_best_match[2]
-                            local yIdx = pos_best_match[3]
-                            local xIdx = pos_best_match[4]
-                            isPos[lid][arIdx][yIdx][xIdx] = 1
+                            local aid = pos_best_match[2]
+                            local yid = pos_best_match[3]
+                            local xid = pos_best_match[4]
+                            local label = pos_best_match[5]
+                            isPos[lid][aid][yid][xid] = 1
+
+                            table.insert(final_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
+                            table.insert(final_conf_target,{label})
+
                             
                             --[===[
                             --for debug
                             local img = inputs[bid]
-                            local xmax = restored_box[lid][arIdx][1][yIdx][xIdx]
-                            local xmin = restored_box[lid][arIdx][2][yIdx][xIdx]
-                            local ymax = restored_box[lid][arIdx][3][yIdx][xIdx]
-                            local ymin = restored_box[lid][arIdx][4][yIdx][xIdx]
+                            local xmax = restored_box[lid][aid][1][yid][xid]
+                            local xmin = restored_box[lid][aid][2][yid][xid]
+                            local ymax = restored_box[lid][aid][3][yid][xid]
+                            local ymin = restored_box[lid][aid][4][yid][xid]
                             img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
                             image.save(tostring(bid) .. "_" .. tostring(gid) ..  ".jpg",img)
                             --]===]
@@ -257,11 +275,25 @@ function train(trainTarget, trainName)
                             local tw = math.log((xmax-xmin)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
                             local th = math.log((ymax-ymin)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
 
-                            table.insert(pos_set,{lid,aid,yid,xid,label,tx,ty,tw,th})
+                            table.insert(final_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
+                            table.insert(final_conf_target,{label})
+                            
+                            if lid == 1 then
+                                ar_num = 4
+                            elseif lid < m then
+                                ar_num = 6
+                            else
+                                ar_num = 5
+                            end
+                            table.insert(final_loc_output,{outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1,ar_num*classNum + (aid-1)*4+4},{yid},{xid}}],lid,bid,aid,yid,xid})
+                            table.insert(final_loc_target,{tx,ty,tw,th})
+
+                           
+                            table.insert(pos_set,{lid,aid,yid,xid,label})
                             isPos[lid][aid][yid][xid] = 1
 
                         end
-                        
+                       
                         --[===[
                         --for debug
                         for pid = 1,table.getn(pos_set) do
@@ -270,22 +302,23 @@ function train(trainTarget, trainName)
                             local yid = pos_set[pid][3]
                             local xid = pos_set[pid][4]
                             
-                            local img = inputs[bid]
                             
                             local xmax = restored_box[lid][aid][1][yid][xid]
                             local xmin = restored_box[lid][aid][2][yid][xid]
                             local ymax = restored_box[lid][aid][3][yid][xid]
                             local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"g")
-                            image.save("pos_" .. tostring(bid) .. "_" .. tostring(pid) .. ".jpg",img)
+                            inputs[bid] = drawRectangle(inputs[bid],xmin,ymin,xmax,ymax,"g")
                         end
+                        image.save("pos_" .. tostring(bid) .. ".jpg",inputs[bid])
                         --]===]
-
+                        
                         --hard neg mining
                         startIdx = 1
                         for lid = 1,m do
                             
-                            if lid < m then
+                            if lid == 1 then
+                                ar_num = 4
+                            elseif lid < m then
                                 ar_num = 6
                             else
                                 ar_num = 5
@@ -296,7 +329,7 @@ function train(trainTarget, trainName)
                                 local neg_input = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{},{}}]
                                 neg_input = SpatialLSM:forward(neg_input)
                                 neg_input = -neg_input[{{},{negId},{},{}}]
-                                neg_input[1][1][isPos[lid][aid]:eq(1)] = -9999
+                                neg_input[1][1][isPos[lid][aid]:eq(1)] = -1
                                 neg_input = torch.reshape(neg_input,1*1*fmSz[lid]*fmSz[lid])
                                 neg_candidate_loss[{{startIdx,startIdx+fmSz[lid]*fmSz[lid]-1}}] = neg_input:type('torch.FloatTensor')
                                 startIdx = startIdx + fmSz[lid]*fmSz[lid]
@@ -305,21 +338,25 @@ function train(trainTarget, trainName)
 
                         end
                         
-                        neg_candidate_loss_cnt = torch.sum(neg_candidate_loss:ne(-9999))
+                        neg_candidate_loss_cnt = torch.sum(neg_candidate_loss:ne(-1))
                         if neg_candidate_loss_cnt > 3*table.getn(pos_set) then
                             neg_topk_val, neg_topk_idx = neg_candidate_loss:topk(3*table.getn(pos_set),true)
                             for nid = 1,neg_topk_idx:size()[1] do
                                 local idx = neg_topk_idx[nid]
                                 lid,aid,yid,xid = parse_idx(idx)
-
+                                
+                                table.insert(final_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
+                                table.insert(final_conf_target,{negId})
                                 table.insert(neg_set,{lid,aid,yid,xid,negId})
                             end
                         else
-                            neg_valid_idx = idx_tensor[neg_candidate_loss:ne(-9999)]
+                            neg_valid_idx = idx_tensor[neg_candidate_loss:ne(-1)]
                             for nid = 1,neg_candidate_loss_cnt do
                                 local idx = neg_valid_idx[nid]
                                 lid,aid,yid,xid = parse_idx(idx)
-
+                                
+                                table.insert(final_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
+                                table.insert(final_conf_target,{negId})
                                 table.insert(neg_set,{lid,aid,yid,xid,negId})
                             end
 
@@ -333,144 +370,67 @@ function train(trainTarget, trainName)
                             local yid = neg_set[nid][3]
                             local xid = neg_set[nid][4]
                             
-                            local img = inputs[bid]
-                            
                             local xmax = restored_box[lid][aid][1][yid][xid]
                             local xmin = restored_box[lid][aid][2][yid][xid]
                             local ymax = restored_box[lid][aid][3][yid][xid]
                             local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
-                            image.save("neg" .. tostring(bid) .. "_" .. tostring(nid) .. ".jpg",img)
+                            inputs[bid] = drawRectangle(inputs[bid],xmin,ymin,xmax,ymax,"r")
                         end
+                        image.save("neg" .. tostring(bid) .. ".jpg",inputs[bid])
                         --]===]
-                        
-                        --final sum up gradient 
-                        --class gradient
-                        local classOutput = torch.Tensor(table.getn(pos_set)+table.getn(neg_set),classNum)
-                        local classGT = torch.Tensor(table.getn(pos_set)+table.getn(neg_set),1)
-                        local locOutput = torch.Tensor(table.getn(pos_set),4)
-                        local locGT = torch.Tensor(table.getn(pos_set),4)
-                        
-                        for pid = 1,table.getn(pos_set) do
-                            
-                            local lid = pos_set[pid][1]
-                            local aid = pos_set[pid][2]
-                            local yid = pos_set[pid][3]
-                            local xid = pos_set[pid][4]
-                            local label = pos_set[pid][5]
-                                                       
-                            classOutput[pid] = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}]:type('torch.FloatTensor')
-                            classGT[pid] = label
 
-                            
-                            local tx = pos_set[pid][6]
-                            local ty = pos_set[pid][7]
-                            local tw = pos_set[pid][8]
-                            local th = pos_set[pid][9]
-                            
-                            --[===[
-                            --for debug
-                            local img = inputs[bid]
-                            local xmax = restored_box[lid][aid][1][yid][xid]
-                            local xmin = restored_box[lid][aid][2][yid][xid]
-                            local ymax = restored_box[lid][aid][3][yid][xid]
-                            local ymin = restored_box[lid][aid][4][yid][xid]
-                            newCenterX = tx*(xmax-xmin) + (xmax+xmin)/2
-                            newCenterY = ty*(ymax-ymin) + (ymax+ymin)/2
-                            newWidth = math.exp(tw)*(xmax-xmin)
-                            newHeight = math.exp(th)*(ymax-ymin)
-                            xmax = newCenterX + newWidth/2
-                            xmin = newCenterX - newWidth/2
-                            ymax = newCenterY + newHeight/2
-                            ymin = newCenterY - newHeight/2
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax)
-                            image.save(tostring(label) .. "_" .. tostring(bid) .. "_" .. tostring(pid) .. ".jpg",img)
-                            --]===]
-                            
-                            if lid < m then
-                                ar_num = 6
-                            else
-                                ar_num = 5
-                            end
-
-                            locOutput[pid] = outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1,ar_num*classNum + (aid-1)*4+4},{yid},{xid}}]:type('torch.FloatTensor')
-                            locGT[pid] = torch.Tensor({tx,ty,tw,th})
-
-                        end
-
-                        for nid = 1,table.getn(neg_set) do
-                            local lid = neg_set[nid][1]
-                            local aid = neg_set[nid][2]
-                            local yid = neg_set[nid][3]
-                            local xid = neg_set[nid][4]
-                            local label = neg_set[nid][5]
-
-                            classOutput[table.getn(pos_set)+nid] = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}]:type('torch.FloatTensor')
-                            classGT[table.getn(pos_set)+nid] = label
-                        end
-                        
-                        classOutput = classOutput:cuda()
-                        classGT = classGT:cuda()
-                        class_error = class_error + crossEntropy:forward(classOutput,classGT)/table.getn(pos_set)
-                        class_dfdo = crossEntropy:backward(classOutput,classGT)/table.getn(pos_set)
-                        
-                                                
-                        locOutput = locOutput:cuda()
-                        locGT = locGT:cuda()
-                        loc_error = loc_error + smoothL1:forward(locOutput,locGT)/table.getn(pos_set)
-                        loc_dfdo = smoothL1:backward(locOutput,locGT)/table.getn(pos_set)
-
-                        if bid == 1 then
-                            for lid = 1,m do
-                                local dfdo = torch.CudaTensor(curBatchDim,outputs[lid]:size()[2],fmSz[lid],fmSz[lid]):zero()
-                                table.insert(tot_dfdo,dfdo)
-                            end
-                        end
-
-
-                        for pid = 1,table.getn(pos_set) do
-
-                            local lid = pos_set[pid][1]
-                            local aid = pos_set[pid][2]
-                            local yid = pos_set[pid][3]
-                            local xid = pos_set[pid][4]
-                            local class_grad = class_dfdo[pid]
-                            local loc_grad = loc_dfdo[pid]
-                            
-                            if lid < m then
-                                ar_num = 6
-                            else
-                                ar_num = 5
-                            end
-
-                            --class grad
-                            tot_dfdo[lid][bid][{{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][bid][{{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_grad
-                            --loc grad
-                            tot_dfdo[lid][bid][{{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][bid][{{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_grad
-                        end
 
                         
-                        for nid = 1,table.getn(neg_set) do
-
-                            local lid = neg_set[nid][1]
-                            local aid = neg_set[nid][2]
-                            local yid = neg_set[nid][3]
-                            local xid = neg_set[nid][4]
-                            local class_grad = class_dfdo[table.getn(pos_set) + nid]
-                            
-                            if lid < m then
-                                ar_num = 6
-                            else
-                                ar_num = 5
-                            end
-
-                            --class grad
-                            tot_dfdo[lid][bid][{{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][bid][{{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_grad
-                        end
-
-
                     end
+
+                    conf_out = torch.Tensor(table.getn(final_conf_output),classNum):type('torch.CudaTensor')
+                    conf_target = torch.Tensor(table.getn(final_conf_target),1):type('torch.CudaTensor')
+                    loc_out = torch.Tensor(table.getn(final_loc_output),4):type('torch.CudaTensor')
+                    loc_target = torch.Tensor(table.getn(final_loc_target),4):type('torch.CudaTensor')
+
+                    for cid = 1,table.getn(final_conf_output) do
+                        conf_out[cid] = final_conf_output[cid][1]
+                        conf_target[cid] = final_conf_target[cid][1]
+                    end
+
+                    for lid = 1,table.getn(final_loc_output) do
+                        loc_out[lid] = final_loc_output[lid][1]
+                        loc_target[lid] = torch.Tensor(final_loc_target[lid])
+                    end
+
+                    class_error = crossEntropy:forward(conf_out,conf_target)
+                    class_dfdo = crossEntropy:backward(conf_out,conf_target)
+
+                    loc_error = smoothL1:forward(loc_out,loc_target)/table.getn(final_loc_output)
+                    loc_dfdo = smoothL1:backward(loc_out,loc_target)/table.getn(final_loc_output)
+
+                    for cid = 1,table.getn(final_conf_output) do
+                        local lid = final_conf_output[cid][2]
+                        local bid = final_conf_output[cid][3]
+                        local aid = final_conf_output[cid][4]
+                        local yid = final_conf_output[cid][5]
+                        local xid = final_conf_output[cid][6]
+
+                        tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_dfdo[cid]
+                    end
+
+                    for lid_ = 1,table.getn(final_loc_output) do
+                        local lid = final_loc_output[lid_][2]
+                        local bid = final_loc_output[lid_][3]
+                        local aid = final_loc_output[lid_][4]
+                        local yid = final_loc_output[lid_][5]
+                        local xid = final_loc_output[lid_][6]
                         
+                        if lid == 1 then
+                            ar_num = 4
+                        elseif lid < m then
+                            ar_num = 6
+                        else
+                            ar_num = 5
+                        end
+
+                        tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_dfdo[lid_]
+                    end
 
                     model:backward(inputs,tot_dfdo)
 
