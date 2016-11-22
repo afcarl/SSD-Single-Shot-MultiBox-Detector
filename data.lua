@@ -60,7 +60,7 @@ function load_data(mode)
 
     if mode == "train" then
         print("training data loading...")
-        dataNum = 1
+        dataNum = 3
     elseif mode == "test" then
         print("test data loading...")
         db_dir_ = db_dir .. "VOC2012_trainval/"
@@ -76,8 +76,8 @@ function load_data(mode)
     for did = 1,dataNum do
 
         if did == 1 then db_dir_ = db_dir .. "VOC2012_trainval/" end
-        --if did == 2 then db_dir_ = db_dir .. "VOC2007_trainval/" end
-        --if did == 3 then db_dir_ = db_dir .. "VOC2007_test/" end
+        if did == 2 then db_dir_ = db_dir .. "VOC2007_trainval/" end
+        if did == 3 then db_dir_ = db_dir .. "VOC2007_test/" end
 
         imgDir = db_dir_ .. 'JPEGImages/'
         annotDir = db_dir_ .. 'Annotations/parsed/'

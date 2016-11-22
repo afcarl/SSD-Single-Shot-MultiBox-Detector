@@ -392,8 +392,8 @@ function train(trainTarget, trainName)
                             conf_target[table.getn(pos_set)+nid] = label
 
                             confusion_target = torch.Tensor(classNum):zero()
-                            confusion_target[conf_target[nid][1]] = 1
-                            confusion:add(SM:forward(conf_out[nid]:type('torch.CudaTensor')):clone(),confusion_target)
+                            confusion_target[conf_target[table.getn(pos_set)+nid][1]] = 1
+                            confusion:add(SM:forward(conf_out[table.getn(pos_set)+nid]:type('torch.CudaTensor')):clone(),confusion_target)
                         end
 
 
@@ -440,7 +440,7 @@ function train(trainTarget, trainName)
                             local xid = neg_set[nid][4]
                             local label = neg_set[nid][5]
 
-                            tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_dfdo[nid]
+                            tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_dfdo[table.getn(pos_set)+nid]
                         end
                         
                         
