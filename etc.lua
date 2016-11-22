@@ -16,7 +16,8 @@ thr = 0.4
 topk_num = 3
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor","bg"}
 
-pos_neg_ratio = 3
+pos_neg_ratio = 1
+neg_thr = 0.1
 m = 5
 scale_table = {}
 for k=1,m do
