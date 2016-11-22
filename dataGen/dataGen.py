@@ -14,6 +14,7 @@ for file_name in fileList:
     root = tree.getroot()
     parsed = []
 
+    """
     for annot in root.iter("annotation"):
 
 
@@ -27,7 +28,21 @@ for file_name in fileList:
                 y_min = coord.findtext("ymin")
 
             parsed = parsed + [str(label) + ","  + str(x_max) + "," + str(x_min) + ","+ str(y_max) + "," + str(y_min)]
+    """
+
+    for obj in tree.findall('object'):
+        label = obj.find('name').text
+        difficult = int(obj.find('difficult').text)
         
+        bbox = obj.find('bndbox')
+        x_max = int(bbox.find("xmax").text)
+        x_min = int(bbox.find("xmin").text)
+        y_max = int(bbox.find("ymax").text)
+        y_min = int(bbox.find("ymin").text)
+
+        parsed = parsed + [str(label) + "," + str(x_max) + "," + str(x_min) + "," + str(y_max) + "," + str(y_min) + "," + str(difficult)]
+
+
     fp = open(db_dir + "parsed/" + file_name[:-3] + "txt","w")
     for elem in parsed:
         print>>fp, elem

@@ -4,30 +4,29 @@ model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
 mode = "train"
-continue = true
-continue_iter = 8000
+continue = false
+continue_iter = 0
 
 classNum = 21
 negId = 21
 inputDim = 3
 imgSz = 300
 trainSz = 17125 --+ 5011 + 4952
-thr = 0.65
+thr = 0.4
 topk_num = 3
-classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
+classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor","bg"}
 
-m = 6
-scale_table = {0.1}
-for k=1,m-1 do
+pos_neg_ratio = 3
+m = 5
+scale_table = {}
+for k=1,m do
     table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-1) * (k-1))
 end
 ar_table = {1,2,1/2,3,1/3}
-fmSz = {38,19,10,5,3,1}
+fmSz = {19,10,5,3,1}
 tot_box_num = 0
 for lid = 1,m do
-    if lid == 1 then
-        ar_num = 4
-    elseif lid < m then
+    if lid < m then
         ar_num = 6
     else
         ar_num = 5
@@ -56,18 +55,15 @@ function str_split(inputstr, sep)
 end
   
 restored_box = {} --xmax xmin ymax ymin
-table.insert(restored_box,torch.Tensor(4,4,fmSz[1],fmSz[1]):zero())
+table.insert(restored_box,torch.Tensor(6,4,fmSz[1],fmSz[1]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[3],fmSz[3]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[4],fmSz[4]):zero())
-table.insert(restored_box,torch.Tensor(6,4,fmSz[5],fmSz[5]):zero())
-table.insert(restored_box,torch.Tensor(5,4,fmSz[6],fmSz[6]):zero())
+table.insert(restored_box,torch.Tensor(5,4,fmSz[5],fmSz[5]):zero())
 
 for lid = 1,m do
     
-    if lid == 1 then
-        ar_num = 4
-    elseif lid < m then
+    if lid < m then
         ar_num = 6
     else
         ar_num = 5
@@ -101,7 +97,6 @@ for lid = 1,m do
                 restored_box[lid][aid][3][r][c] = math.floor((yCenter + height/2)*(imgSz))+1
                 restored_box[lid][aid][4][r][c] = math.floor((yCenter - height/2)*(imgSz))+1
 
-                ::nextCell::
             end
         end
     end
@@ -114,9 +109,7 @@ function parse_idx(idx)
 
     for lid = 1,m do
         
-        if lid == 1 then
-            ar_num = 4
-        elseif lid < m then
+        if lid < m then
             ar_num = 6
         else
             ar_num = 5
@@ -148,14 +141,7 @@ function combine_idx(lid,aid,yid,xid)
     
     local result = 0
     for l = 1,lid-1 do
-        
-        if l == 1 then
-            ar_num = 4
-        else
-            ar_num = 6
-        end
-
-        result = result + ar_num*fmSz[l]*fmSz[l]
+        result = result + 6*fmSz[l]*fmSz[l]
     end
     
     result = result + aid*fmSz[lid]*fmSz[lid] + yid*fmSz[lid] + xid

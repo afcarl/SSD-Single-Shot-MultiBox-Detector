@@ -106,9 +106,7 @@ function test(testTarget, testName)
 
         for lid = 1,m do
            
-            if lid == 1 then
-                ar_num = 4
-            elseif lid < m then
+            if lid < m then
                 ar_num = 6
             else
                 ar_num = 5
@@ -119,10 +117,10 @@ function test(testTarget, testName)
                 --conf thresholding
                 local conf = output[lid][{{1},{(aid-1)*classNum+1,aid*classNum},{},{}}]
                 conf = SpatialSM:forward(conf)
-                conf = conf[1][{{1,classNum},{},{}}]
+                conf = conf[1][{{1,classNum-1},{},{}}]
 
                 conf,label = torch.max(conf,1)
-                conf_mask = torch.cmul(conf:gt(thr),label:ne(negId))
+                conf_mask = conf:gt(thr)
                 conf_mask = conf_mask:type('torch.ByteTensor')
                 
                 conf = conf[conf_mask]:type('torch.FloatTensor')
@@ -159,7 +157,7 @@ function test(testTarget, testName)
             end
         end
         
-
+        flag = false
         --NMS for each class
         for lid = 1,classNum-1 do
             
@@ -174,10 +172,11 @@ function test(testTarget, testName)
                 resultTensor = torch.reshape(resultTensor,resultTensor:size()[1]/5,5)
                 resultBB[lid] = resultTensor
                 resultTensor = torch.cat(resultTensor,torch.Tensor(resultTensor:size()[1],1):fill(lid),2)
-               
+                
                 --[===[
-                if lid == 1 then
+                if flag == false then
                     before_top_k = resultTensor
+                    flag = true
                 else
                     before_top_k = torch.cat(before_top_k,resultTensor,1)
                 end
@@ -186,6 +185,7 @@ function test(testTarget, testName)
             end
         end
         
+
         --[===[
         --extract topk detection
         if before_top_k:size()[1] > topk_num then
@@ -217,7 +217,7 @@ function test(testTarget, testName)
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open(resultDir .. "/comp3_det_test_" .. classList[lid] .. ".txt","a")
+            fp_result = io.open("comp3_det_test_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
                 
                 for rid = 1,resultBB[lid]:size()[1] do
@@ -231,7 +231,7 @@ function test(testTarget, testName)
                     split_file_name = split_file_name[table.getn(split_file_name)]
                     split_file_name = split_file_name:sub(1,-5)
                     
-                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
+                    fp_result:write(tostring(t), " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
 
                                        
                     input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")

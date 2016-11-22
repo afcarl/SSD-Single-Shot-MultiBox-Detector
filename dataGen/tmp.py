@@ -1,5 +1,2 @@
-
-fp = open("a.txt","w")
-for elem in ["asdf",1,3,4]:
-    print>>fp, elem
-fp.close()
+a = [1,2,3]
+print a[0:2]
