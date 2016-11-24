@@ -4,7 +4,29 @@ require "math"
 require "LuaXML"
 dofile "etc.lua"
 
-
+--[===[
+2012 + 2007 + 2007
+1644
+1644
+2446
+1850
+2852
+1211
+5677
+2036
+5862
+1456
+1409
+2666
+1604
+1560
+28075
+2419
+1748
+1662
+1334
+1621
+--]===]
 
 function label_to_num(label)
 
@@ -57,6 +79,7 @@ function load_data(mode)
 
     target = {}
     name = {}
+    count = torch.Tensor(classNum):zero()
 
     if mode == "train" then
         print("training data loading...")
@@ -107,6 +130,7 @@ function load_data(mode)
                 xmin = tonumber(xmin)
                 ymax = tonumber(ymax)
                 ymin = tonumber(ymin)
+                count[label] = count[label] + 1
                 
                 --[===[
                 --for debug
@@ -120,7 +144,7 @@ function load_data(mode)
             table.insert(target,target_per_sample)
         end
     end
-
+    
     return target, name
 end
 
