@@ -3,7 +3,7 @@ result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
-mode = "train"
+mode = "test"
 continue = false
 continue_iter = 0
 
@@ -12,8 +12,9 @@ negId = 21
 inputDim = 3
 imgSz = 300
 trainSz = 17125 + 5011 + 4952
-thr = 0.65
+thr = 0.19
 topk_num = 3
+classList_object = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor","bg"}
 
 pos_neg_ratio = 3

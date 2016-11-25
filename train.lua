@@ -14,7 +14,7 @@ optimState = {
     weightDecay = wDecay,
     momentum = mmt,
 }
-pos_confusion = optim.ConfusionMatrix(classList)
+pos_confusion = optim.ConfusionMatrix(classList_object)
 neg_confusion = optim.ConfusionMatrix(classList)
 optimMethod = optim.sgd
 tot_error = 0
@@ -214,8 +214,8 @@ function train(trainTarget, trainName)
                             local label = pos_best_match[5]
 
                             table.insert(pos_set,pos_best_match)
-                            table.insert(final_pos_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
-                            table.insert(final_pos_conf_target,{label})
+                            table.insert(final_pos_conf_output,{lid,bid,aid,yid,xid})
+                            table.insert(final_pos_conf_target,label)
 
                             
                             --[===[
@@ -268,8 +268,8 @@ function train(trainTarget, trainName)
                             local tw = math.log((xmax-xmin)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
                             local th = math.log((ymax-ymin)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
 
-                            table.insert(final_pos_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
-                            table.insert(final_pos_conf_target,{label})
+                            table.insert(final_pos_conf_output,{lid,bid,aid,yid,xid})
+                            table.insert(final_pos_conf_target,label)
                             table.insert(pos_set,{lid,aid,yid,xid,label})
 
                             if lid == 1 then
@@ -279,7 +279,7 @@ function train(trainTarget, trainName)
                             else
                                 ar_num = 5
                             end
-                            table.insert(final_loc_output,{outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1,ar_num*classNum + (aid-1)*4+4},{yid},{xid}}],lid,bid,aid,yid,xid})
+                            table.insert(final_loc_output,{lid,bid,aid,yid,xid})
                             table.insert(final_loc_target,{tx,ty,tw,th})
 
                            
@@ -342,9 +342,9 @@ function train(trainTarget, trainName)
                             for nid = 1,neg_topk_idx:size()[1] do
                                 local idx = neg_topk_idx[nid]
                                 lid,aid,yid,xid = parse_idx(idx)
-                                
-                                table.insert(final_neg_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
-                                table.insert(final_neg_conf_target,{negId})
+
+                                table.insert(final_neg_conf_output,{lid,bid,aid,yid,xid})
+                                table.insert(final_neg_conf_target,negId)
                                 table.insert(neg_set,{lid,aid,yid,xid,negId})
                             end
                         else
@@ -353,12 +353,14 @@ function train(trainTarget, trainName)
                                 local idx = neg_valid_idx[nid]
                                 lid,aid,yid,xid = parse_idx(idx)
                                 
-                                table.insert(final_neg_conf_output,{outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}],lid,bid,aid,yid,xid})
-                                table.insert(final_neg_conf_target,{negId})
+                                table.insert(final_neg_conf_output,{lid,bid,aid,yid,xid})
+                                table.insert(final_neg_conf_target,negId)
                                 table.insert(neg_set,{lid,aid,yid,xid,negId})
                             end
 
                         end
+
+                        
                         
                         if tot_iter % 100 == 0 then
                             --for debug
@@ -389,17 +391,33 @@ function train(trainTarget, trainName)
                     loc_target = torch.Tensor(table.getn(final_loc_target),4):type('torch.CudaTensor')
 
                     for cid = 1,table.getn(final_pos_conf_output) do
-                        pos_conf_out[cid] = final_pos_conf_output[cid][1]
-                        pos_conf_target[cid] = final_pos_conf_target[cid][1]
+                        local lid = final_pos_conf_output[cid][1]
+                        local bid = final_pos_conf_output[cid][2]
+                        local aid = final_pos_conf_output[cid][3]
+                        local yid = final_pos_conf_output[cid][4]
+                        local xid = final_pos_conf_output[cid][5]
 
-                        pos_confusion_target = torch.Tensor(classNum):zero()
+                        local feature = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}]
+
+                        pos_conf_out[cid] = feature
+                        pos_conf_target[cid] = final_pos_conf_target[cid]
+
+                        pos_confusion_target = torch.Tensor(classNum-1):zero()
                         pos_confusion_target[pos_conf_target[cid][1]] = 1
-                        pos_confusion:add(SM:forward(pos_conf_out[cid]:type('torch.CudaTensor')):clone(),pos_confusion_target)
+                        pos_confusion:add(SM:forward(pos_conf_out[cid][{{1,classNum-1}}]:type('torch.CudaTensor')):clone(),pos_confusion_target)
                     end
 
                     for cid = 1,table.getn(final_neg_conf_output) do
-                        neg_conf_out[cid] = final_neg_conf_output[cid][1]
-                        neg_conf_target[cid] = final_neg_conf_target[cid][1]
+                        local lid = final_neg_conf_output[cid][1]
+                        local bid = final_neg_conf_output[cid][2]
+                        local aid = final_neg_conf_output[cid][3]
+                        local yid = final_neg_conf_output[cid][4]
+                        local xid = final_neg_conf_output[cid][5]
+
+                        local feature = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}]
+
+                        neg_conf_out[cid] = feature
+                        neg_conf_target[cid] = final_neg_conf_target[cid]
 
                         neg_confusion_target = torch.Tensor(classNum):zero()
                         neg_confusion_target[neg_conf_target[cid][1]] = 1
@@ -407,15 +425,32 @@ function train(trainTarget, trainName)
                     end
 
 
-                    for lid = 1,table.getn(final_loc_output) do
-                        loc_out[lid] = final_loc_output[lid][1]
-                        loc_target[lid] = torch.Tensor(final_loc_target[lid])
+                    for cid = 1,table.getn(final_loc_output) do
+                        
+                        local lid = final_loc_output[cid][1]
+                        local bid = final_loc_output[cid][2]
+                        local aid = final_loc_output[cid][3]
+                        local yid = final_loc_output[cid][4]
+                        local xid = final_loc_output[cid][5]
+
+                        if lid == 1 then
+                            ar_num = 4
+                        elseif lid < m then
+                            ar_num = 6
+                        else
+                            ar_num = 5
+                        end
+
+
+                        local feature = outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1, ar_num*classNum + (aid-1)*4+4},{yid},{xid}}]
+
+
+                        loc_out[cid] = feature
+                        loc_target[cid] = torch.Tensor(final_loc_target[cid])
                     end
                     
-                    if table.getn(final_pos_conf_output) > 0 then
-                        pos_class_error = crossEntropy:forward(pos_conf_out,pos_conf_target)
-                        pos_class_dfdo = crossEntropy:backward(pos_conf_out,pos_conf_target):clone()
-                    end
+                    pos_class_error = crossEntropy:forward(pos_conf_out,pos_conf_target)
+                    pos_class_dfdo = crossEntropy:backward(pos_conf_out,pos_conf_target):clone()
                     
                     neg_class_error = crossEntropy:forward(neg_conf_out,neg_conf_target)
                     neg_class_dfdo = crossEntropy:backward(neg_conf_out,neg_conf_target):clone()
@@ -424,11 +459,11 @@ function train(trainTarget, trainName)
                     loc_dfdo = smoothL1:backward(loc_out,loc_target)/table.getn(final_loc_output)
 
                     for cid = 1,table.getn(final_pos_conf_output) do
-                        local lid = final_pos_conf_output[cid][2]
-                        local bid = final_pos_conf_output[cid][3]
-                        local aid = final_pos_conf_output[cid][4]
-                        local yid = final_pos_conf_output[cid][5]
-                        local xid = final_pos_conf_output[cid][6]
+                        local lid = final_pos_conf_output[cid][1]
+                        local bid = final_pos_conf_output[cid][2]
+                        local aid = final_pos_conf_output[cid][3]
+                        local yid = final_pos_conf_output[cid][4]
+                        local xid = final_pos_conf_output[cid][5]
                                 
                         --[===[
                         local xmax = restored_box[lid][aid][1][yid][xid]
@@ -444,22 +479,22 @@ function train(trainTarget, trainName)
                     end
 
                     for cid = 1,table.getn(final_neg_conf_output) do
-                        local lid = final_neg_conf_output[cid][2]
-                        local bid = final_neg_conf_output[cid][3]
-                        local aid = final_neg_conf_output[cid][4]
-                        local yid = final_neg_conf_output[cid][5]
-                        local xid = final_neg_conf_output[cid][6]
+                        local lid = final_neg_conf_output[cid][1]
+                        local bid = final_neg_conf_output[cid][2]
+                        local aid = final_neg_conf_output[cid][3]
+                        local yid = final_neg_conf_output[cid][4]
+                        local xid = final_neg_conf_output[cid][5]
 
                         tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + neg_class_dfdo[cid]
                     end
 
 
-                    for lid_ = 1,table.getn(final_loc_output) do
-                        local lid = final_loc_output[lid_][2]
-                        local bid = final_loc_output[lid_][3]
-                        local aid = final_loc_output[lid_][4]
-                        local yid = final_loc_output[lid_][5]
-                        local xid = final_loc_output[lid_][6]
+                    for cid = 1,table.getn(final_loc_output) do
+                        local lid = final_loc_output[cid][1]
+                        local bid = final_loc_output[cid][2]
+                        local aid = final_loc_output[cid][3]
+                        local yid = final_loc_output[cid][4]
+                        local xid = final_loc_output[cid][5]
                         
                        if lid == 1 then
                            ar_num = 4
@@ -469,7 +504,7 @@ function train(trainTarget, trainName)
                             ar_num = 5
                         end
 
-                        tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_dfdo[lid_]
+                        tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_dfdo[cid]
                     end
 
                     model:backward(inputs,tot_dfdo)

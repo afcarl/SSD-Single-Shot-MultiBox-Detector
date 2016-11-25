@@ -106,7 +106,9 @@ function test(testTarget, testName)
 
         for lid = 1,m do
            
-            if lid < m then
+            if lid == 1 then
+                ar_num = 4
+            elseif lid < m then
                 ar_num = 6
             else
                 ar_num = 5
@@ -132,7 +134,6 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
-                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -149,11 +150,12 @@ function test(testTarget, testName)
                 xmin = newCenterX - newWidth/2
                 ymax = newCenterY + newHeight/2
                 ymin = newCenterY - newHeight/2
-                --]===]
 
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
-                    table.insert(resultBB[label[rid]],{xmin[rid],ymin[rid],xmax[rid],ymax[rid],conf[rid]})
+                    if xmin[rid] < imgSz and ymin[rid] < imgSz and xmax[rid] > 1 and ymax[rid] > 1 then
+                        table.insert(resultBB[label[rid]],{xmin[rid],ymin[rid],xmax[rid],ymax[rid],conf[rid]})
+                    end
                 end
 
             end
@@ -219,7 +221,7 @@ function test(testTarget, testName)
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open("comp3_det_test_" .. classList[lid] .. ".txt","a")
+            fp_result = io.open("comp3_det_test_" .. classList[lid] .. ".txt","w")
             if type(resultBB[lid]) == "userdata" then
                 
                 for rid = 1,resultBB[lid]:size()[1] do
