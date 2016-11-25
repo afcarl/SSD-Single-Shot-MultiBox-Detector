@@ -105,14 +105,8 @@ function test(testTarget, testName)
         end
 
         for lid = 1,m do
-           
-            if lid == 1 then
-                ar_num = 4
-            elseif lid < m then
-                ar_num = 6
-            else
-                ar_num = 5
-            end
+            
+            local ar_num = lid2arnum(lid)
 
             for aid = 1,ar_num do 
             

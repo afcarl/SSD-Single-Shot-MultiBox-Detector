@@ -3,8 +3,8 @@ result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
-mode = "test"
-continue = false
+mode = "train"
+continue = true
 continue_iter = 0
 
 classNum = 21
@@ -58,7 +58,16 @@ function str_split(inputstr, sep)
         end
         return t
 end
-  
+
+function lid2arnum(lid)
+    if lid == 1 then
+        return 4
+    elseif lid < m then
+        return 6
+    else
+        return 5
+    end
+end
 restored_box = {} --xmax xmin ymax ymin
 table.insert(restored_box,torch.Tensor(4,4,fmSz[1],fmSz[1]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
@@ -69,13 +78,7 @@ table.insert(restored_box,torch.Tensor(5,4,fmSz[6],fmSz[6]):zero())
 
 for lid = 1,m do
     
-    if lid == 1 then
-        ar_num = 4
-    elseif lid < m then
-        ar_num = 6
-    else
-        ar_num = 5
-    end
+    local ar_num = lid2arnum(lid)
 
    for r = 1,fmSz[lid] do
        for c = 1,fmSz[lid] do
@@ -118,13 +121,7 @@ function parse_idx(idx)
 
     for lid = 1,m do
         
-        if lid == 1 then
-            ar_num = 4
-        elseif lid < m then
-            ar_num = 6
-        else
-            ar_num = 5
-        end
+        local ar_num = lid2arnum(lid)
 
         if idx < ar_num*fmSz[lid]*fmSz[lid] then
         
