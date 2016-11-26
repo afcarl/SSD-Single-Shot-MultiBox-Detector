@@ -4,7 +4,7 @@ model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
 mode = "train"
-continue = true
+continue = false
 continue_iter = 0
 
 classNum = 21

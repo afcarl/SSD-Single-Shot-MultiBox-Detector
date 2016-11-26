@@ -141,13 +141,7 @@ function train(trainTarget, trainName)
 
                             for lid = 1,m do
                                 
-                                if lid == 1 then
-                                    ar_num = 4
-                                elseif lid < m then
-                                    ar_num = 6
-                                else
-                                    ar_num = 5
-                                end
+                                local ar_num = lid2arnum(lid)
                                 
                                 --assign one box to each GT(best match box)
                                 local minXMax = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmax_),restored_box[lid][{{},{1},{},{}}])
@@ -320,13 +314,7 @@ function train(trainTarget, trainName)
                         neg_mask = torch.cmul(pos_candidate_iou:ge(0),pos_candidate_iou:lt(neg_thr)):eq(0) -- 1: iou < 0 or iou >= 0.5
                         for lid = 1,m do
                             
-                            if lid == 1 then
-                                ar_num = 4
-                            elseif lid < m then
-                                ar_num = 6
-                            else
-                                ar_num = 5
-                            end
+                            local ar_num = lid2arnum(lid)
 
                             for aid = 1,ar_num do
 
@@ -434,13 +422,7 @@ function train(trainTarget, trainName)
                         local yid = final_loc_output[cid][4]
                         local xid = final_loc_output[cid][5]
 
-                        if lid == 1 then
-                            ar_num = 4
-                        elseif lid < m then
-                            ar_num = 6
-                        else
-                            ar_num = 5
-                        end
+                        local ar_num = lid2arnum(lid)
 
 
                         local feature = outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1, ar_num*classNum + (aid-1)*4+4},{yid},{xid}}]
@@ -453,8 +435,8 @@ function train(trainTarget, trainName)
                     class_error = crossEntropy:forward(conf_out,conf_target)
                     class_dfdo = crossEntropy:backward(conf_out,conf_target)
                     
-                    loc_error = smoothL1:forward(loc_out,loc_target)/table.getn(final_loc_output)
-                    loc_dfdo = smoothL1:backward(loc_out,loc_target)/table.getn(final_loc_output)
+                    loc_error = smoothL1:forward(loc_out,loc_target)--/table.getn(final_loc_output)
+                    loc_dfdo = smoothL1:backward(loc_out,loc_target)--/table.getn(final_loc_output)
 
                     for cid = 1,table.getn(final_pos_conf_output) do
                         local lid = final_pos_conf_output[cid][1]
@@ -494,13 +476,7 @@ function train(trainTarget, trainName)
                         local yid = final_loc_output[cid][4]
                         local xid = final_loc_output[cid][5]
                         
-                       if lid == 1 then
-                           ar_num = 4
-                        elseif lid < m then
-                            ar_num = 6
-                        else
-                            ar_num = 5
-                        end
+                        local ar_num = lid2arnum(lid)
 
                         tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_dfdo[cid]
                     end
@@ -509,7 +485,7 @@ function train(trainTarget, trainName)
 
                     gradParams:div(curBatchDim)
                     class_error = class_error
-                    loc_error = loc_error/curBatchDim
+                    loc_error = loc_error--/curBatchDim
 
                     err = class_error + loc_error
                     tot_error = tot_error + err
