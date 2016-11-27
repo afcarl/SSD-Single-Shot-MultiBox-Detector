@@ -37,28 +37,8 @@ function train(trainTarget, trainName)
     shuffle = torch.randperm(trainSz)
      
     for t = 1,trainSz,batchSz do
-        if t+batchSz-1 <= trainSz then
-            inputs = torch.CudaTensor(batchSz,inputDim,imgSz,imgSz)
-            targets = {}
-            curBatchDim = batchSz
-        else
-            inputs = torch.CudaTensor(trainSz-t+1,inputDim,imgSz,imgSz)
-            targets = {}
-            curBatchDim = trainSz-t+1
-        end
-
-        for i = t,math.min(t+batchSz-1,trainSz) do
-            
-            local input_name = trainName[shuffle[i]]
-            local target = trainTarget[shuffle[i]]
-
-            local input = image.load(input_name)
-            input = image.scale(input,imgSz,imgSz)
-            
-            inputs[i-t+1] = input
-            table.insert(targets,target)
-        end
         
+        inputs, targets, curBatchDim = createBatch(t, shuffle, trainName, trainTarget)
 
             local feval = function(x)
                     if x ~= params then
@@ -77,7 +57,7 @@ function train(trainTarget, trainName)
                     final_loc_target = {}
                     
                     tot_dfdo = {}
-                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,4*(4+classNum),fmSz[1],fmSz[1]):zero())
+                    table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,3*(4+classNum),fmSz[1],fmSz[1]):zero())
                     table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[2],fmSz[2]):zero())
                     table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[3],fmSz[3]):zero())
                     table.insert(tot_dfdo,torch.CudaTensor(curBatchDim,6*(4+classNum),fmSz[4],fmSz[4]):zero())
@@ -97,11 +77,16 @@ function train(trainTarget, trainName)
 
                     --layer, batch, ar*classNum + ar*4, sz, sz
                     local outputs = model:forward(inputs)
-                    
 
                     for bid = 1,curBatchDim do
 
+                        neg_candidate_loss:zero()
                         pos_candidate_iou:zero()
+                        pos_candidate_label:zero()
+                        pos_candidate_xmax:zero()
+                        pos_candidate_xmin:zero()
+                        pos_candidate_ymax:zero()
+                        pos_candidate_ymin:zero()
 
                         local target = targets[bid]
                         local pos_set = {}

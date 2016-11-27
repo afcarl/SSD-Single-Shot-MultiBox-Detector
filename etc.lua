@@ -23,14 +23,14 @@ neg_thr = 0.5
 m = 6
 scale_table = {0.1}
 for k=1,m-1 do
-    table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-1) * (k-1))
+    table.insert(scale_table,0.2 + (0.95 - 0.2)/(m-2) * (k-1))
 end
 ar_table = {1,2,1/2,3,1/3}
 fmSz = {38,19,10,5,3,1}
 tot_box_num = 0
 for lid = 1,m do
     if lid == 1 then
-        ar_num = 4
+        ar_num = 3
     elseif lid < m then
         ar_num = 6
     else
@@ -61,7 +61,7 @@ end
 
 function lid2arnum(lid)
     if lid == 1 then
-        return 4
+        return 3
     elseif lid < m then
         return 6
     else
@@ -69,7 +69,7 @@ function lid2arnum(lid)
     end
 end
 restored_box = {} --xmax xmin ymax ymin
-table.insert(restored_box,torch.Tensor(4,4,fmSz[1],fmSz[1]):zero())
+table.insert(restored_box,torch.Tensor(3,4,fmSz[1],fmSz[1]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[2],fmSz[2]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[3],fmSz[3]):zero())
 table.insert(restored_box,torch.Tensor(6,4,fmSz[4],fmSz[4]):zero())
@@ -86,7 +86,7 @@ for lid = 1,m do
             local yCenter = (r-1+0.5)/fmSz[lid]
             for aid = 1,ar_num do
                 
-                if lid < m then
+                if lid > 1 and lid < m then
                     if aid < ar_num then
                         ar_factor = ar_table[aid]
                         scale_factor = scale_table[lid]
@@ -103,12 +103,11 @@ for lid = 1,m do
                 local height = scale_factor/math.sqrt(ar_factor)
 
                 
-                restored_box[lid][aid][1][r][c] = math.floor((xCenter + width/2)*(imgSz))+1
-                restored_box[lid][aid][2][r][c] = math.floor((xCenter - width/2)*(imgSz))+1
-                restored_box[lid][aid][3][r][c] = math.floor((yCenter + height/2)*(imgSz))+1
-                restored_box[lid][aid][4][r][c] = math.floor((yCenter - height/2)*(imgSz))+1
+                restored_box[lid][aid][1][r][c] = math.floor(math.min(xCenter + width/2,1)*(imgSz-1))+1
+                restored_box[lid][aid][2][r][c] = math.floor(math.max(xCenter - width/2,0)*(imgSz-1))+1
+                restored_box[lid][aid][3][r][c] = math.floor(math.min(yCenter + height/2,1)*(imgSz-1))+1
+                restored_box[lid][aid][4][r][c] = math.floor(math.max(yCenter - height/2,0)*(imgSz-1))+1
 
-                ::nextCell::
             end
         end
     end
@@ -151,7 +150,7 @@ function combine_idx(lid,aid,yid,xid)
     for l = 1,lid-1 do
         
         if l == 1 then
-            ar_num = 4
+            ar_num = 3
         else
             ar_num = 6
         end

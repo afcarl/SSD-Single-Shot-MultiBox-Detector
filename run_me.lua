@@ -8,6 +8,7 @@ math.randomseed(os.time())
 dofile "etc.lua"
 dofile "data.lua"
 dofile "model.lua"
+dofile "batch.lua"
 dofile "train.lua"
 dofile "test.lua"
 

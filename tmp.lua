@@ -3,10 +3,13 @@ require 'nn'
 require 'cudnn'
 require 'cunn'
 require 'module/normalConv'
+require 'module/normalDilatedConv'
 require 'module/normalLinear'
 require 'sys'
+require 'loadcaffe'
 dofile 'etc.lua'
 
+--[===[
 w = 2
 h = 2
 dim = 3
@@ -38,6 +41,12 @@ model:add(nn.Transpose({3,4},{2,3}))
 
 result = model:forward(input)
 print(result)
+--]===]
 
+a = torch.Tensor({{1,2},{3,4}})
+b = a[{{1},{}}]:clone()
+c = a[{{2},{}}]:clone()
 
+a[{{1},{}}] = c
 
+print(a,b,c)

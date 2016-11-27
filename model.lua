@@ -2,7 +2,9 @@ require 'torch'
 require 'nn'
 require 'cudnn'
 require 'cunn'
+require 'loadcaffe'
 require 'module/normalConv'
+require 'module/normalDilatedConv'
 require 'module/normalLinear'
 require 'module/customCMul'
 dofile 'etc.lua'
@@ -36,15 +38,14 @@ function build_l2_normalize(dim)
 end
 
 ----------------------------
-VGG_pretrain = torch.load("/media/sda1/Model/VGG/vgg_pretrain.t7")
+--VGG_pretrain = torch.load("/media/sda1/Model/VGG/vgg_pretrain.t7")
+VGG_pretrain = loadcaffe.load("/media/sda1/Model/VGG/deploy.prototxt","/media/sda1/Model/VGG/VGG_ILSVRC_16_layers_fc_reduced.caffemodel","cudnn")
 
 VGGNet = nn.Sequential()
 
 for i = 1,23 do
 
-    if i == 5 or i == 10  then
-        VGGNet:add(nn.SpatialMaxPooling(2,2,2,2))
-    elseif i == 17 then
+    if i == 17 then
         VGGNet:add(nn.SpatialMaxPooling(2,2,2,2,1,1))
     else
         VGGNet:add(VGG_pretrain:get(i))
@@ -56,7 +57,7 @@ subBranch_1 = nn.Sequential()
 
 kernelSz = 3
 prev_fDim = 512
-next_fDim = 4*(classNum+4)
+next_fDim = 3*(classNum+4)
 subBranch_1:add(build_l2_normalize(512))
 custom_cmul = nn.customCMul(1,512,fmSz[1],fmSz[1])
 custom_cmul:reset(20)
@@ -66,25 +67,33 @@ subBranch_1:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kern
 ------------------------------
 mainBranch_1 = nn.Sequential()
 
-for i = 24,31 do
+for i = 24,36 do
     
-    if i == 24 then
-        mainBranch_1:add(nn.SpatialMaxPooling(2,2,2,2))
-    elseif i == 31 then
+    if i == 34 then
+        goto dropout
+    end
+
+    if i == 31 then
         mainBranch_1:add(nn.SpatialMaxPooling(3,3,1,1,1,1))
+    elseif i == 32 then
+        kernelSz = 3
+        prev_fDim = 512
+        next_fDim = 1024
+        dilatedStep = 6
+        
+        dilatedConvFromCaffe = VGG_pretrain:get(i)
+        dilatedConvTorch = nn.normalDilatedConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,dilatedStep*(kernelSz-1)/2,dilatedStep*(kernelSz-1)/2,dilatedStep,dilatedStep,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim)))
+
+        dilatedConvTorch.weight = dilatedConvFromCaffe.weight
+        dilatedConvTorch.bias = dilatedConvFromCaffe.bias
+        mainBranch_1:add(dilatedConvTorch)
+
     else
         mainBranch_1:add(VGG_pretrain:get(i))
     end
-end
 
-kernelSz = 3
-prev_fDim = 512
-next_fDim = 1024
-mainBranch_1:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
-mainBranch_1:add(nn.ReLU(true))
-kernelSz = 1
-mainBranch_1:add(cudnn.normalConv(next_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*next_fDim))))
-mainBranch_1:add(nn.ReLU(true))
+    ::dropout::
+end
 
 subBranch_2 = nn.Sequential()
 kernelSz = 3
@@ -149,7 +158,6 @@ subBranch_5:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kern
 -------------------------
 mainBranch_5 = nn.Sequential()
 mainBranch_5:add(nn.SpatialAveragePooling(3,3))
-mainBranch_5:add(nn.ReLU(true))
 
 subBranch_6 = nn.Sequential()
 kernelSz = 1
