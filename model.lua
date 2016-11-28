@@ -38,7 +38,6 @@ function build_l2_normalize(dim)
 end
 
 ----------------------------
---VGG_pretrain = torch.load("/media/sda1/Model/VGG/vgg_pretrain.t7")
 VGG_pretrain = loadcaffe.load("/media/sda1/Model/VGG/deploy.prototxt","/media/sda1/Model/VGG/VGG_ILSVRC_16_layers_fc_reduced.caffemodel","cudnn")
 
 VGGNet = nn.Sequential()
@@ -79,7 +78,7 @@ for i = 24,36 do
         kernelSz = 3
         prev_fDim = 512
         next_fDim = 1024
-        dilatedStep = 6
+        dilatedStep = 3
         
         dilatedConvFromCaffe = VGG_pretrain:get(i)
         dilatedConvTorch = nn.normalDilatedConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,dilatedStep*(kernelSz-1)/2,dilatedStep*(kernelSz-1)/2,dilatedStep,dilatedStep,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim)))

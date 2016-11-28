@@ -21,6 +21,7 @@ function createBatch(t, shuffle, trainName, trainTarget)
         local input_name = trainName[shuffle[i]]
         local target = trainTarget[shuffle[i]]
         
+        --[===[
         isTooMany = true
         while isTooMany == true do
             isTooMany = false
@@ -47,7 +48,7 @@ function createBatch(t, shuffle, trainName, trainTarget)
             label = target[gid][1]
             label_count[label] = label_count[label] + 1
         end
-
+        --]===]
 
         local input = image.load(input_name)
         input = image.scale(input,imgSz,imgSz)

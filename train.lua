@@ -33,7 +33,6 @@ function train(trainTarget, trainName)
     
 
     model:training()
-
     shuffle = torch.randperm(trainSz)
      
     for t = 1,trainSz,batchSz do
@@ -91,7 +90,6 @@ function train(trainTarget, trainName)
                         local target = targets[bid]
                         local pos_set = {}
                         local neg_set = {}
-                        
 
                         for gid = 1,table.getn(target) do
                             
@@ -408,10 +406,7 @@ function train(trainTarget, trainName)
                         local xid = final_loc_output[cid][5]
 
                         local ar_num = lid2arnum(lid)
-
-
                         local feature = outputs[lid][{{bid},{ar_num*classNum + (aid-1)*4+1, ar_num*classNum + (aid-1)*4+4},{yid},{xid}}]
-
 
                         loc_out[cid] = feature
                         loc_target[cid] = torch.Tensor(final_loc_target[cid])
