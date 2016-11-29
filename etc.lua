@@ -3,7 +3,7 @@ result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
-mode = "train"
+mode = "test"
 continue = false
 continue_iter = 0
 

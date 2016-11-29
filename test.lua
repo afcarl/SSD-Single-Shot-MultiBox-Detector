@@ -87,7 +87,7 @@ function test(testTarget, testName)
 
     testDataSz = table.getn(testName)
     local startTime = sys.clock() 
-    for t = 1,30 do
+    for t = 1,testDataSz do
         
         input = image.load(testName[t])
         input = image.scale(input,imgSz,imgSz)
@@ -215,7 +215,7 @@ function test(testTarget, testName)
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open("comp3_det_test_" .. classList[lid] .. ".txt","w")
+            fp_result = io.open(resultDir .. "comp3_det_test_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
                 
                 for rid = 1,resultBB[lid]:size()[1] do
@@ -229,7 +229,7 @@ function test(testTarget, testName)
                     split_file_name = split_file_name[table.getn(split_file_name)]
                     split_file_name = split_file_name:sub(1,-5)
                     
-                    fp_result:write(tostring(t), " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
+                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
 
                                        
                     input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")
