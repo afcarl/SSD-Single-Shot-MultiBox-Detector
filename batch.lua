@@ -21,35 +21,6 @@ function createBatch(t, shuffle, trainName, trainTarget)
         local input_name = trainName[shuffle[i]]
         local target = trainTarget[shuffle[i]]
         
-        --[===[
-        isTooMany = true
-        while isTooMany == true do
-            isTooMany = false
-            for gid = 1,table.getn(target) do
-                
-                local label = target[gid][1]
-                if label_count[label] > 3 then
-                    isTooMany = true
-                end
-            end
-            
-            if isTooMany == true then
-                new_idx = math.random(1,trainSz-(i-t+1))
-                if new_idx >= (t-1)*batchSz+1 then
-                    new_idx = new_idx + (i-t+1)
-                end
-                input_name = trainName[new_idx]
-                target = trainTarget[new_idx]
-            end
-        end
-
-
-        for gid = 1,table.getn(target) do
-            label = target[gid][1]
-            label_count[label] = label_count[label] + 1
-        end
-        --]===]
-
         local input = image.load(input_name)
         input = image.scale(input,imgSz,imgSz)
         r = input[{{1},{},{}}]:clone()

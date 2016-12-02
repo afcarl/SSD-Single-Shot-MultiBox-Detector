@@ -12,8 +12,8 @@ negId = 21
 inputDim = 3
 imgSz = 300
 trainSz = 17125 + 5011 + 4952
-thr = 0.19
-topk_num = 3
+thr = 0.01
+topk_num = 200
 classList_object = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor"}
 classList = {"aeroplane","bicycle","bird","boat","bottle","bus","car","cat","chair","cow","diningtable","dog","horse","motorbike","person","pottedplant","sheep","sofa","train","tvmonitor","bg"}
 

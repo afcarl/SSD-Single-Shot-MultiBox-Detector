@@ -4,30 +4,6 @@ require "math"
 require "LuaXML"
 dofile "etc.lua"
 
---[===[
-2012 + 2007 + 2007
-1644
-1644
-2446
-1850
-2852
-1211
-5677
-2036
-5862
-1456
-1409
-2666
-1604
-1560
-28075
-2419
-1748
-1662
-1334
-1621
---]===]
-
 function label_to_num(label)
 
     if label == "aeroplane" then
@@ -123,13 +99,13 @@ function load_data(mode)
             target_per_sample = {}
             for line in io.lines(annotDir .. annotFileList[fid]) do
                 
-                label, xmax, xmin, ymax, ymin = line:match("([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)")
+                parsed_line = str_split(line,",")
                 
-                label = label_to_num(label)
-                xmax = tonumber(xmax)
-                xmin = tonumber(xmin)
-                ymax = tonumber(ymax)
-                ymin = tonumber(ymin)
+                label = label_to_num(parsed_line[1])
+                xmax = tonumber(parsed_line[2])
+                xmin = tonumber(parsed_line[3])
+                ymax = tonumber(parsed_line[4])
+                ymin = tonumber(parsed_line[5])
                 count[label] = count[label] + 1
                 
                 --[===[

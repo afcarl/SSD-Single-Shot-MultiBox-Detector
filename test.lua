@@ -90,6 +90,10 @@ function test(testTarget, testName)
     for t = 1,testDataSz do
         
         input = image.load(testName[t])
+        
+        imgWidth = input:size()[3]
+        imgHeight = input:size()[2]
+
         input = image.scale(input,imgSz,imgSz)
         target = testTarget[t]
           
@@ -128,6 +132,7 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
+                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -135,15 +140,16 @@ function test(testTarget, testName)
                 local tw = loc_offset[1][3][conf_mask]:type('torch.FloatTensor')
                 local th = loc_offset[1][4][conf_mask]:type('torch.FloatTensor')
 
-                local newCenterX = torch.cmul(tx,(xmax-xmin)) + (xmax+xmin)/2
-                local newCenterY = torch.cmul(ty,(ymax-ymin)) + (ymax+ymin)/2
-                local newWidth = torch.cmul(torch.exp(tw),(xmax-xmin))
-                local newHeight = torch.cmul(torch.exp(th),(ymax-ymin))
+                local newCenterX = torch.cmul(tx,(xmax-xmin+1)) + (xmax+xmin)/2
+                local newCenterY = torch.cmul(ty,(ymax-ymin+1)) + (ymax+ymin)/2
+                local newWidth = torch.cmul(torch.exp(tw),(xmax-xmin+1))
+                local newHeight = torch.cmul(torch.exp(th),(ymax-ymin+1))
                 
-                xmax = newCenterX + newWidth/2
-                xmin = newCenterX - newWidth/2
-                ymax = newCenterY + newHeight/2
-                ymin = newCenterY - newHeight/2
+                xmax = torch.cmin(torch.ceil(newCenterX + newWidth/2 - 0.5),imgSz)
+                xmin = torch.cmax(torch.ceil(newCenterX - newWidth/2 + 0.5),1)
+                ymax = torch.cmin(torch.ceil(newCenterY + newHeight/2 - 0.5),imgSz)
+                ymin = torch.cmax(torch.ceil(newCenterY - newHeight/2 + 0.5),1)
+                --]===]
 
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
@@ -171,20 +177,16 @@ function test(testTarget, testName)
                 resultBB[lid] = resultTensor
                 resultTensor = torch.cat(resultTensor,torch.Tensor(resultTensor:size()[1],1):fill(lid),2)
                 
-                --[===[
                 if flag == false then
                     before_top_k = resultTensor
                     flag = true
                 else
                     before_top_k = torch.cat(before_top_k,resultTensor,1)
                 end
-                --]===]
                 
             end
         end
         
-
-        --[===[
         --extract topk detection
         if before_top_k:size()[1] > topk_num then
             
@@ -211,11 +213,11 @@ function test(testTarget, testName)
 
             end
         end
-        --]===]
+
 
         --result write to txt file
         for lid = 1,classNum-1 do
-            fp_result = io.open(resultDir .. "comp3_det_test_" .. classList[lid] .. ".txt","a")
+            fp_result = io.open("comp3_det_val_" .. classList[lid] .. ".txt","a")
             if type(resultBB[lid]) == "userdata" then
                 
                 for rid = 1,resultBB[lid]:size()[1] do
@@ -229,10 +231,10 @@ function test(testTarget, testName)
                     split_file_name = split_file_name[table.getn(split_file_name)]
                     split_file_name = split_file_name:sub(1,-5)
                     
-                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
+                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", (xmin-1)*(imgWidth/imgSz)+1, " " , (ymin-1)*(imgHeight/imgSz)+1, " ", (xmax-1)*(imgWidth/imgSz)+1, " ", (ymax-1)*(imgHeight/imgSz)+1,"\n")
 
                                        
-                    input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")
+                    --input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")
 
                 end
             end
@@ -240,7 +242,7 @@ function test(testTarget, testName)
         end
 
         --draw BB
-        image.save(tostring(t) .. ".jpg",input)
+        --image.save(tostring(t) .. ".jpg",input)
         
     end
     local endTime = sys.clock()

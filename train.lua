@@ -97,10 +97,10 @@ function train(trainTarget, trainName)
                             local imgWidth = target[gid][6]
                             local imgHeight = target[gid][7]
 
-                            local xmax_ = xmax * (imgSz/imgWidth)
-                            local xmin_ = xmin * (imgSz/imgWidth)
-                            local ymax_ = ymax * (imgSz/imgHeight)
-                            local ymin_ = ymin * (imgSz/imgHeight)
+                            local xmax_ = (xmax-1) * (imgSz/imgWidth) + 1
+                            local xmin_ = (xmin-1) * (imgSz/imgWidth) + 1
+                            local ymax_ = (ymax-1) * (imgSz/imgHeight) + 1
+                            local ymin_ = (ymin-1) * (imgSz/imgHeight) + 1
 
                             --image.save(classList[label] .. tostring(bid) .. ".jpg",inputs[bid][{{},{ymin_,ymax_},{xmin_,xmax_}}])
 
@@ -112,7 +112,7 @@ function train(trainTarget, trainName)
                             image.save(tostring(bid) .. "_" .. tostring(gid) .. ".jpg",img)
                             --]===]
                             
-                            local gt_area = (xmax_ - xmin_) * (ymax_ - ymin_)
+                            local gt_area = (xmax_ - xmin_ + 1) * (ymax_ - ymin_ + 1)
                             local startIdx = 1
 
                             for lid = 1,m do
@@ -124,9 +124,9 @@ function train(trainTarget, trainName)
                                 local maxXMin = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmin_),restored_box[lid][{{},{2},{},{}}])
                                 local minYMAX = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymax_),restored_box[lid][{{},{3},{},{}}])
                                 local maxYMIN = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymin_),restored_box[lid][{{},{4},{},{}}])
-                                local box_area = torch.cmul((restored_box[lid][{{},{1},{},{}}] - restored_box[lid][{{},{2},{},{}}]), (restored_box[lid][{{},{3},{},{}}] - restored_box[lid][{{},{4},{},{}}]))
+                                local box_area = torch.cmul((restored_box[lid][{{},{1},{},{}}] - restored_box[lid][{{},{2},{},{}}] + 1), (restored_box[lid][{{},{3},{},{}}] - restored_box[lid][{{},{4},{},{}}] + 1))
 
-                                local area_inter = torch.cmul(torch.cmax(minXMax - maxXMin,0), torch.cmax(minYMAX - maxYMIN,0))
+                                local area_inter = torch.cmul(torch.cmax(minXMax - maxXMin + 1,0), torch.cmax(minYMAX - maxYMIN + 1,0))
                                 local area_union = torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(gt_area) + box_area - area_inter
                                 local IoU = torch.cdiv(area_inter,area_union)
                                 IoU = torch.reshape(IoU,ar_num,fmSz[lid],fmSz[lid])
@@ -149,11 +149,12 @@ function train(trainTarget, trainName)
                                 image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
                                 --]===]
                                 
-                                local tx = ((xmin_+xmax_)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid])
-                                local ty = ((ymin_+ymax_)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid])
-                                local tw = math.log((xmax_-xmin_)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
-                                local th = math.log((ymax_-ymin_)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
+                                local tx = ((xmin_+xmax_)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1)
+                                local ty = ((ymin_+ymax_)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1)
+                                local tw = math.log((xmax_-xmin_+1)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1))
+                                local th = math.log((ymax_-ymin_+1)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1))
                                 
+
                                 if IoU[aid][yid][xid] > max_pos_iou then
                                     pos_best_match = {lid,aid,yid,xid,label,tx,ty,tw,th}
                                     max_pos_iou = IoU[aid][yid][xid]
@@ -234,10 +235,10 @@ function train(trainTarget, trainName)
                             local ymax = pos_ymax[pid]
                             local ymin = pos_ymin[pid]
 
-                            local tx = ((xmin+xmax)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid])
-                            local ty = ((ymin+ymax)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid])
-                            local tw = math.log((xmax-xmin)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
-                            local th = math.log((ymax-ymin)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
+                            local tx = ((xmin+xmax)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1)
+                            local ty = ((ymin+ymax)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1)
+                            local tw = math.log((xmax-xmin+1)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1))
+                            local th = math.log((ymax-ymin+1)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1))
                             
                             table.insert(pos_set,{lid,aid,yid,xid,label,tx,ty,tw,th})
                            
