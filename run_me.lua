@@ -23,7 +23,7 @@ if mode == "train" then
         model = torch.load(model_dir .. 'model.net')
     end
 
-    trainTarget, trainName = load_data("train")
+    trainTarget, trainName = load_data("target")
 
     while tot_iter <= iterLimit do
         train(trainTarget, trainName)

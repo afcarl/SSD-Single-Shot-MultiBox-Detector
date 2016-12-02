@@ -59,7 +59,66 @@ function load_data(mode)
 
     if mode == "train" then
         print("training data loading...")
-        dataNum = 3
+
+        for did = 1,3 do
+
+            if did == 1 then 
+                db_dir_ = db_dir .. "VOC2012_trainval/"
+                imgDir = db_dir_ .. 'JPEGImages/'
+                annotDir = db_dir_ .. 'Annotations/parsed/'
+                annotFileList = {}
+                for line in io.lines("/home/gyeongsikmoon/workspace/Data/PASCAL_VOC/VOCdevkit/VOC2012_trainval/ImageSets/Main/train.txt") do
+                    table.insert(annotFileList,line .. ".txt")
+                end
+            else
+                if did == 2 then db_dir_ = db_dir .. "VOC2007_trainval/" end
+                if did == 3 then db_dir_ = db_dir .. "VOC2007_test/" end
+
+                imgDir = db_dir_ .. 'JPEGImages/'
+                annotDir = db_dir_ .. 'Annotations/parsed/'
+                f = io.popen('ls ' .. annotDir)
+                annotFileList = {}
+                for name in f:lines() do table.insert(annotFileList,name) end
+            end
+                   
+            for fid = 1,#annotFileList do
+                
+                --img load
+                img = image.load(imgDir .. annotFileList[fid]:sub(1,-4) .. "jpg")
+                local imgHeight = img:size()[2]
+                local imgWidth = img:size()[3]
+
+                --name save
+                table.insert(name,imgDir .. annotFileList[fid]:sub(1,-4) .. "jpg")
+
+                --label save
+                target_per_sample = {}
+                for line in io.lines(annotDir .. annotFileList[fid]) do
+                    
+                    parsed_line = str_split(line,",")
+                    
+                    label = label_to_num(parsed_line[1])
+                    xmax = tonumber(parsed_line[2])
+                    xmin = tonumber(parsed_line[3])
+                    ymax = tonumber(parsed_line[4])
+                    ymin = tonumber(parsed_line[5])
+                    count[label] = count[label] + 1
+                    
+                    --[===[
+                    --for debug
+                    img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
+                    image.save(tostring(fid) .. ".jpg",img)
+                    --]===]
+                    
+                    table.insert(target_per_sample,{label,xmax,xmin,ymax,ymin,imgWidth,imgHeight})
+                end
+               
+                table.insert(target,target_per_sample)
+            end
+        end
+        trainSz = table.getn(target)
+        return target, name
+    
     elseif mode == "test" then
         print("test data loading...")
         db_dir_ = db_dir .. "VOC2012_trainval/"
@@ -68,59 +127,8 @@ function load_data(mode)
         for line in io.lines("/home/gyeongsikmoon/workspace/Data/PASCAL_VOC/VOCdevkit/VOC2012_trainval/ImageSets/Main/val.txt") do
             table.insert(testFileList,imgDir .. line .. ".jpg")
         end
-
         return {}, testFileList
     end
     
-    for did = 1,dataNum do
-
-        if did == 1 then db_dir_ = db_dir .. "VOC2012_trainval/" end
-        if did == 2 then db_dir_ = db_dir .. "VOC2007_trainval/" end
-        if did == 3 then db_dir_ = db_dir .. "VOC2007_test/" end
-
-        imgDir = db_dir_ .. 'JPEGImages/'
-        annotDir = db_dir_ .. 'Annotations/parsed/'
-        f = io.popen('ls ' .. annotDir)
-        annotFileList = {}
-        for name in f:lines() do table.insert(annotFileList,name) end
-       
-        for fid = 1,#annotFileList do
-            
-            --img load
-            img = image.load(imgDir .. annotFileList[fid]:sub(1,-4) .. "jpg")
-            local imgHeight = img:size()[2]
-            local imgWidth = img:size()[3]
-            --img = image.scale(img,imgSz,imgSz)
-
-            --name save
-            table.insert(name,imgDir .. annotFileList[fid]:sub(1,-4) .. "jpg")
-
-            --label save
-            target_per_sample = {}
-            for line in io.lines(annotDir .. annotFileList[fid]) do
-                
-                parsed_line = str_split(line,",")
-                
-                label = label_to_num(parsed_line[1])
-                xmax = tonumber(parsed_line[2])
-                xmin = tonumber(parsed_line[3])
-                ymax = tonumber(parsed_line[4])
-                ymin = tonumber(parsed_line[5])
-                count[label] = count[label] + 1
-                
-                --[===[
-                --for debug
-                img = drawRectangle(img,xmin,ymin,xmax,ymax)
-                image.save(tostring(fid) .. ".jpg",img)
-                --]===]
-                
-                table.insert(target_per_sample,{label,xmax,xmin,ymax,ymin,imgWidth,imgHeight})
-            end
-           
-            table.insert(target,target_per_sample)
-        end
-    end
-    
-    return target, name
 end
 
