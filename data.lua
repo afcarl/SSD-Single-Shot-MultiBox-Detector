@@ -127,6 +127,7 @@ function load_data(mode)
         for line in io.lines("/home/gyeongsikmoon/workspace/Data/PASCAL_VOC/VOCdevkit/VOC2012_trainval/ImageSets/Main/val.txt") do
             table.insert(testFileList,imgDir .. line .. ".jpg")
         end
+        testSz = table.getn(testFileList)
         return {}, testFileList
     end
     

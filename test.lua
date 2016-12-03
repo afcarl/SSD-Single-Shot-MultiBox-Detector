@@ -85,9 +85,8 @@ function test(testTarget, testName)
        
     model:evaluate()
 
-    testDataSz = table.getn(testName)
     local startTime = sys.clock() 
-    for t = 1,testDataSz do
+    for t = 1,testSz do
         
         input = image.load(testName[t])
         
@@ -246,7 +245,7 @@ function test(testTarget, testName)
         
     end
     local endTime = sys.clock()
-    print("fps: " .. tostring(testDataSz/(endTime-startTime)))
+    print("fps: " .. tostring(testSz/(endTime-startTime)))
    
 
 end
