@@ -97,22 +97,13 @@ function train(trainTarget, trainName)
                             local imgWidth = target[gid][6]
                             local imgHeight = target[gid][7]
 
-                            local xmax_ = (xmax-1) * (imgSz/imgWidth) + 1
-                            local xmin_ = (xmin-1) * (imgSz/imgWidth) + 1
-                            local ymax_ = (ymax-1) * (imgSz/imgHeight) + 1
-                            local ymin_ = (ymin-1) * (imgSz/imgHeight) + 1
-
-                            --image.save(classList[label] .. tostring(bid) .. ".jpg",inputs[bid][{{},{ymin_,ymax_},{xmin_,xmax_}}])
+                            local gt_xmax_coord = (xmax-1)/(imgWidth-1)
+                            local gt_xmin_coord = (xmin-1)/(imgWidth-1)
+                            local gt_ymax_coord = (ymax-1)/(imgHeight-1)
+                            local gt_ymin_coord = (ymin-1)/(imgHeight-1)
 
                             
-                            --[===[
-                            --for debug
-                            local img = inputs[bid]
-                            img = drawRectangle(img,xmin_,ymin_,xmax_,ymax_,"r")
-                            image.save(tostring(bid) .. "_" .. tostring(gid) .. ".jpg",img)
-                            --]===]
-                            
-                            local gt_area = (xmax_ - xmin_ + 1) * (ymax_ - ymin_ + 1)
+                            local gt_area = (xmax - xmin + 1) * (ymax - ymin + 1)
                             local startIdx = 1
 
                             for lid = 1,m do
@@ -120,11 +111,11 @@ function train(trainTarget, trainName)
                                 local ar_num = lid2arnum(lid)
                                 
                                 --assign one box to each GT(best match box)
-                                local minXMax = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmax_),restored_box[lid][{{},{1},{},{}}])
-                                local maxXMin = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmin_),restored_box[lid][{{},{2},{},{}}])
-                                local minYMAX = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymax_),restored_box[lid][{{},{3},{},{}}])
-                                local maxYMIN = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymin_),restored_box[lid][{{},{4},{},{}}])
-                                local box_area = torch.cmul((restored_box[lid][{{},{1},{},{}}] - restored_box[lid][{{},{2},{},{}}] + 1), (restored_box[lid][{{},{3},{},{}}] - restored_box[lid][{{},{4},{},{}}] + 1))
+                                local minXMax = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmax),restored_box[lid][{{},{1},{},{}}]*(imgWidth-1)+1)
+                                local maxXMin = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(xmin),restored_box[lid][{{},{2},{},{}}]*(imgWidth-1)+1)
+                                local minYMAX = torch.cmin(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymax),restored_box[lid][{{},{3},{},{}}]*(imgHeight-1)+1)
+                                local maxYMIN = torch.cmax(torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(ymin),restored_box[lid][{{},{4},{},{}}]*(imgHeight-1)+1)
+                                local box_area = torch.cmul((restored_box[lid][{{},{1},{},{}}]*imgWidth - restored_box[lid][{{},{2},{},{}}]*imgWidth), (restored_box[lid][{{},{3},{},{}}]*imgHeight - restored_box[lid][{{},{4},{},{}}]*imgHeight))
 
                                 local area_inter = torch.cmul(torch.cmax(minXMax - maxXMin + 1,0), torch.cmax(minYMAX - maxYMIN + 1,0))
                                 local area_union = torch.Tensor(ar_num,1,fmSz[lid],fmSz[lid]):fill(gt_area) + box_area - area_inter
@@ -138,21 +129,10 @@ function train(trainTarget, trainName)
                                 yid = yid[1][1][xid]
                                 aid = aid[1][yid][xid]
                                 
-                                --[===[
-                                --for debug
-                                local img = inputs[bid]
-                                local xmax = restored_box[lid][aid][1][yid][xid]
-                                local xmin = restored_box[lid][aid][2][yid][xid]
-                                local ymax = restored_box[lid][aid][3][yid][xid]
-                                local ymin = restored_box[lid][aid][4][yid][xid]
-                                img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
-                                image.save(tostring(bid) .. "_" .. tostring(gid) .. "_" .. tostring(lid) .. ".jpg",img)
-                                --]===]
-                                
-                                local tx = ((xmin_+xmax_)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1)
-                                local ty = ((ymin_+ymax_)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1)
-                                local tw = math.log((xmax_-xmin_+1)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1))
-                                local th = math.log((ymax_-ymin_+1)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1))
+                                local tx = ((gt_xmin_coord+gt_xmax_coord)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid])
+                                local ty = ((gt_ymin_coord+gt_ymax_coord)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid])
+                                local tw = math.log((gt_xmax_coord-gt_xmin_coord)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
+                                local th = math.log((gt_ymax_coord-gt_ymin_coord)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
                                 
 
                                 if IoU[aid][yid][xid] > max_pos_iou then
@@ -167,10 +147,10 @@ function train(trainTarget, trainName)
                                 pos_candidate_iou[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = IoU[IoU_comp]
                                 pos_candidate_label[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = label
                                 
-                                pos_candidate_xmax[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = xmax_
-                                pos_candidate_xmin[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = xmin_
-                                pos_candidate_ymax[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = ymax_
-                                pos_candidate_ymin[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = ymin_
+                                pos_candidate_xmax[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = gt_xmax_coord
+                                pos_candidate_xmin[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = gt_xmin_coord
+                                pos_candidate_ymax[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = gt_ymax_coord
+                                pos_candidate_ymin[{{startIdx,startIdx+ar_num*fmSz[lid]*fmSz[lid]-1}}][IoU_comp] = gt_ymin_coord
 
                                 startIdx = startIdx + ar_num*fmSz[lid]*fmSz[lid]
 
@@ -179,17 +159,6 @@ function train(trainTarget, trainName)
                             --pos assign(best match)
                             table.insert(pos_set,pos_best_match)
                             
-                            --[===[
-                            --for debug
-                            local img = inputs[bid]
-                            local xmax = restored_box[lid][aid][1][yid][xid]
-                            local xmin = restored_box[lid][aid][2][yid][xid]
-                            local ymax = restored_box[lid][aid][3][yid][xid]
-                            local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
-                            image.save(tostring(bid) .. "_" .. tostring(gid) ..  ".jpg",img)
-                            --]===]
-
                         end
 
                         --pos assign(overlap > 0.5)
@@ -202,16 +171,6 @@ function train(trainTarget, trainName)
                             local idx = combine_idx(lid,aid,yid,xid)
                             pos_candidate_iou[idx] = -1
 
-                            --[===[
-                            lid,aid,yid,xid = parse_idx(idx)
-                            local img = inputs[bid]
-                            local xmax = restored_box[lid][aid][1][yid][xid]
-                            local xmin = restored_box[lid][aid][2][yid][xid]
-                            local ymax = restored_box[lid][aid][3][yid][xid]
-                            local ymin = restored_box[lid][aid][4][yid][xid]
-                            img = drawRectangle(img,xmin,ymin,xmax,ymax,"r")
-                            image.save(tostring(bid) .. "_" .. tostring(gid) ..  ".jpg",img)
-                            --]===]
                         end
                         pos_candidate_mask = pos_candidate_iou:ge(0.5)
 
@@ -235,10 +194,10 @@ function train(trainTarget, trainName)
                             local ymax = pos_ymax[pid]
                             local ymin = pos_ymin[pid]
 
-                            local tx = ((xmin+xmax)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1)
-                            local ty = ((ymin+ymax)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1)
-                            local tw = math.log((xmax-xmin+1)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]+1))
-                            local th = math.log((ymax-ymin+1)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]+1))
+                            local tx = ((xmin+xmax)/2 - (restored_box[lid][aid][2][yid][xid]+restored_box[lid][aid][1][yid][xid])/2)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid])
+                            local ty = ((ymin+ymax)/2 - (restored_box[lid][aid][4][yid][xid]+restored_box[lid][aid][3][yid][xid])/2)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid])
+                            local tw = math.log((xmax-xmin)/(restored_box[lid][aid][1][yid][xid]-restored_box[lid][aid][2][yid][xid]))
+                            local th = math.log((ymax-ymin)/(restored_box[lid][aid][3][yid][xid]-restored_box[lid][aid][4][yid][xid]))
                             
                             table.insert(pos_set,{lid,aid,yid,xid,label,tx,ty,tw,th})
                            
@@ -256,12 +215,11 @@ function train(trainTarget, trainName)
                                 local label = pos_set[pid][5]
                                 label = classList[label]
 
-                                local xmax = restored_box[lid][aid][1][yid][xid]
-                                local xmin = restored_box[lid][aid][2][yid][xid]
-                                local ymax = restored_box[lid][aid][3][yid][xid]
-                                local ymin = restored_box[lid][aid][4][yid][xid]
+                                local xmax = restored_box[lid][aid][1][yid][xid]*(imgSz-1)+1
+                                local xmin = restored_box[lid][aid][2][yid][xid]*(imgSz-1)+1
+                                local ymax = restored_box[lid][aid][3][yid][xid]*(imgSz-1)+1
+                                local ymin = restored_box[lid][aid][4][yid][xid]*(imgSz-1)+1
 
-                                --image.save(label .. tostring(pid) .. ".jpg",pos_img[{{},{math.max(ymin,1),math.min(ymax,imgSz)},{math.max(xmin,1),math.min(xmax,imgSz)}}])
                                 pos_img = drawRectangle(pos_img,xmin,ymin,xmax,ymax,"g")
                             end
                             image.save("pos_" .. tostring(bid) .. ".jpg",pos_img)
@@ -320,10 +278,10 @@ function train(trainTarget, trainName)
                                 local yid = neg_set[nid][3]
                                 local xid = neg_set[nid][4]
                                 
-                                local xmax = restored_box[lid][aid][1][yid][xid]
-                                local xmin = restored_box[lid][aid][2][yid][xid]
-                                local ymax = restored_box[lid][aid][3][yid][xid]
-                                local ymin = restored_box[lid][aid][4][yid][xid]
+                                local xmax = restored_box[lid][aid][1][yid][xid]*(imgSz-1)+1
+                                local xmin = restored_box[lid][aid][2][yid][xid]*(imgSz-1)+1
+                                local ymax = restored_box[lid][aid][3][yid][xid]*(imgSz-1)+1
+                                local ymin = restored_box[lid][aid][4][yid][xid]*(imgSz-1)+1
                                 neg_img = drawRectangle(neg_img,xmin,ymin,xmax,ymax,"r")
                             end
                             image.save("neg" .. tostring(bid) .. ".jpg",neg_img)
@@ -389,16 +347,6 @@ function train(trainTarget, trainName)
                             local yid = pos_set[cid][3]
                             local xid = pos_set[cid][4]
                                     
-                            --[===[
-                            local xmax = restored_box[lid][aid][1][yid][xid]
-                            local xmin = restored_box[lid][aid][2][yid][xid]
-                            local ymax = restored_box[lid][aid][3][yid][xid]
-                            local ymin = restored_box[lid][aid][4][yid][xid]
-                            local label = pos_set[cid][1]
-                            local img = inputs[bid]
-                            image.save(classList[label] .. tostring(cid) .. ".jpg",img[{{},{math.max(ymin,1),math.min(ymax,imgSz)},{math.max(xmin,1),math.min(xmax,imgSz)}}])
-                            --]===]
-       
                             tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] = tot_dfdo[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{yid},{xid}}] + class_dfdo[cid]
                             local ar_num = lid2arnum(lid)
                             tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] = tot_dfdo[lid][{{bid},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{yid},{xid}}] + loc_dfdo[cid]

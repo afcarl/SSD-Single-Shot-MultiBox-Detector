@@ -94,6 +94,11 @@ function test(testTarget, testName)
         imgHeight = input:size()[2]
 
         input = image.scale(input,imgSz,imgSz)
+        r = input[{{1},{},{}}]:clone()
+        b = input[{{3},{},{}}]:clone()
+        input[{{1},{},{}}] = b
+        input[{{3},{},{}}] = r
+
         target = testTarget[t]
           
         input = input:cuda()
@@ -139,22 +144,25 @@ function test(testTarget, testName)
                 local tw = loc_offset[1][3][conf_mask]:type('torch.FloatTensor')
                 local th = loc_offset[1][4][conf_mask]:type('torch.FloatTensor')
 
-                local newCenterX = torch.cmul(tx,(xmax-xmin+1)) + (xmax+xmin)/2
-                local newCenterY = torch.cmul(ty,(ymax-ymin+1)) + (ymax+ymin)/2
-                local newWidth = torch.cmul(torch.exp(tw),(xmax-xmin+1))
-                local newHeight = torch.cmul(torch.exp(th),(ymax-ymin+1))
+                local newCenterX = torch.cmul(tx,(xmax-xmin)) + (xmax+xmin)/2
+                local newCenterY = torch.cmul(ty,(ymax-ymin)) + (ymax+ymin)/2
+                local newWidth = torch.cmul(torch.exp(tw),(xmax-xmin))
+                local newHeight = torch.cmul(torch.exp(th),(ymax-ymin))
                 
-                xmax = torch.cmin(torch.ceil(newCenterX + newWidth/2 - 0.5),imgSz)
-                xmin = torch.cmax(torch.ceil(newCenterX - newWidth/2 + 0.5),1)
-                ymax = torch.cmin(torch.ceil(newCenterY + newHeight/2 - 0.5),imgSz)
-                ymin = torch.cmax(torch.ceil(newCenterY - newHeight/2 + 0.5),1)
+                xmax = torch.cmin(newCenterX + newWidth/2,1)
+                xmin = torch.cmax(newCenterX - newWidth/2,0)
+                ymax = torch.cmin(newCenterY + newHeight/2,1)
+                ymin = torch.cmax(newCenterY - newHeight/2,0)
                 --]===]
-
+                
+                xmax = xmax*(imgWidth-1)+1
+                ymax = ymax*(imgHeight-1)+1
+                xmin = xmin*(imgWidth-1)+1
+                ymin = ymin*(imgHeight-1)+1
+                
                 --result save to table(before NMS)
                 for rid = 1,rest_box_num do
-                    if xmin[rid] < imgSz and ymin[rid] < imgSz and xmax[rid] > 1 and ymax[rid] > 1 then
-                        table.insert(resultBB[label[rid]],{xmin[rid],ymin[rid],xmax[rid],ymax[rid],conf[rid]})
-                    end
+                    table.insert(resultBB[label[rid]],{xmin[rid],ymin[rid],xmax[rid],ymax[rid],conf[rid]})
                 end
 
             end
@@ -230,7 +238,7 @@ function test(testTarget, testName)
                     split_file_name = split_file_name[table.getn(split_file_name)]
                     split_file_name = split_file_name:sub(1,-5)
                     
-                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", (xmin-1)*(imgWidth/imgSz)+1, " " , (ymin-1)*(imgHeight/imgSz)+1, " ", (xmax-1)*(imgWidth/imgSz)+1, " ", (ymax-1)*(imgHeight/imgSz)+1,"\n")
+                    fp_result:write(split_file_name, " ", resultBB[lid][rid][5], " ", xmin, " " , ymin, " ", xmax, " ", ymax,"\n")
 
                                        
                     --input = drawRectangle(input,xmin,ymin,xmax,ymax,"r")

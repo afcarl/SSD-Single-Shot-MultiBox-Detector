@@ -101,11 +101,10 @@ for lid = 1,m do
                 local width = scale_factor*math.sqrt(ar_factor)
                 local height = scale_factor/math.sqrt(ar_factor)
 
-                
-                restored_box[lid][aid][1][r][c] = math.floor(math.min(xCenter + width/2,1)*(imgSz-1))+1
-                restored_box[lid][aid][2][r][c] = math.floor(math.max(xCenter - width/2,0)*(imgSz-1))+1
-                restored_box[lid][aid][3][r][c] = math.floor(math.min(yCenter + height/2,1)*(imgSz-1))+1
-                restored_box[lid][aid][4][r][c] = math.floor(math.max(yCenter - height/2,0)*(imgSz-1))+1
+                restored_box[lid][aid][1][r][c] = math.min(xCenter + width/2,1)
+                restored_box[lid][aid][2][r][c] = math.max(xCenter - width/2,0)
+                restored_box[lid][aid][3][r][c] = math.min(yCenter + height/2,1)
+                restored_box[lid][aid][4][r][c] = math.max(yCenter - height/2,0)
 
             end
         end
