@@ -136,7 +136,6 @@ function test(testTarget, testName)
                 local ymax = restored_box[lid][aid][3][conf_mask]
                 local ymin = restored_box[lid][aid][4][conf_mask]
                 
-                --[===[
                 --bb regression apply
                 local loc_offset = output[lid][{{1},{ar_num*classNum+(aid-1)*4+1,ar_num*classNum+(aid-1)*4+4},{},{}}]
                 local tx = loc_offset[1][1][conf_mask]:type('torch.FloatTensor')
@@ -153,7 +152,6 @@ function test(testTarget, testName)
                 xmin = torch.cmax(newCenterX - newWidth/2,0)
                 ymax = torch.cmin(newCenterY + newHeight/2,1)
                 ymin = torch.cmax(newCenterY - newHeight/2,0)
-                --]===]
                 
                 xmax = xmax*(imgWidth-1)+1
                 ymax = ymax*(imgHeight-1)+1

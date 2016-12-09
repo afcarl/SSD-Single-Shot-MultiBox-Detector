@@ -59,7 +59,7 @@ prev_fDim = 512
 next_fDim = 3*(classNum+4)
 subBranch_1:add(build_l2_normalize(512))
 custom_cmul = nn.customCMul(1,512,1,1)
-custom_cmul:reset(20)
+custom_cmul:reset(20/math.sqrt(512))
 subBranch_1:add(custom_cmul)
 subBranch_1:add(cudnn.normalConv(prev_fDim,next_fDim,kernelSz,kernelSz,1,1,(kernelSz-1)/2,(kernelSz-1)/2,0,math.sqrt(2/(kernelSz*kernelSz*prev_fDim))))
 
