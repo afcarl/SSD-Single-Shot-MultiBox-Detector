@@ -4,8 +4,8 @@ model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
 mode = "train"
-continue = false
-continue_iter = 0
+continue = true
+continue_iter = 38e3
 
 classNum = 21
 negId = 21

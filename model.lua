@@ -57,7 +57,8 @@ subBranch_1 = nn.Sequential()
 kernelSz = 3
 prev_fDim = 512
 next_fDim = 3*(classNum+4)
-subBranch_1:add(build_l2_normalize(512))
+--subBranch_1:add(build_l2_normalize(512))
+subBranch_1:add(nn.SpatialCrossMapLRN(1024,1024,0.5,0))
 custom_cmul = nn.customCMul(1,512,1,1)
 custom_cmul:reset(20/math.sqrt(512))
 subBranch_1:add(custom_cmul)
