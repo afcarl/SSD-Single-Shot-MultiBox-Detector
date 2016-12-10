@@ -67,7 +67,7 @@ function load_data(mode)
                 imgDir = db_dir_ .. 'JPEGImages/'
                 annotDir = db_dir_ .. 'Annotations/parsed/'
                 annotFileList = {}
-                for line in io.lines("/home/gyeongsikmoon/workspace/Data/PASCAL_VOC/VOCdevkit/VOC2012_trainval/ImageSets/Main/train.txt") do
+                for line in io.lines(db_dir .. "VOC2012_trainval/ImageSets/Main/train.txt") do
                     table.insert(annotFileList,line .. ".txt")
                 end
             else
@@ -124,7 +124,7 @@ function load_data(mode)
         db_dir_ = db_dir .. "VOC2012_trainval/"
         imgDir = db_dir_ .. 'JPEGImages/'
         testFileList = {}
-        for line in io.lines("/home/gyeongsikmoon/workspace/Data/PASCAL_VOC/VOCdevkit/VOC2012_trainval/ImageSets/Main/val.txt") do
+        for line in io.lines(db_dir .. "VOC2012_trainval/ImageSets/Main/val.txt") do
             table.insert(testFileList,imgDir .. line .. ".jpg")
         end
         testSz = table.getn(testFileList)

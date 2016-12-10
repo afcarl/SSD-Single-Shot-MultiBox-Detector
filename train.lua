@@ -202,7 +202,8 @@ function train(trainTarget, trainName)
                             table.insert(pos_set,{lid,aid,yid,xid,label,tx,ty,tw,th})
                            
                         end
-                        
+                       
+                        --[===[
                         if tot_iter % 100 == 0 then
                             --for debug
                             pos_img = inputs[bid]:clone()
@@ -224,6 +225,7 @@ function train(trainTarget, trainName)
                             end
                             image.save("pos_" .. tostring(bid) .. ".jpg",pos_img)
                         end
+                        --]===]
 
                         --hard neg mining
                         startIdx = 1
@@ -235,7 +237,7 @@ function train(trainTarget, trainName)
                             for aid = 1,ar_num do
 
                                 local neg_input = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{},{}}]
-                                neg_input = SpatialSM:forward(neg_input):clone()
+                                neg_input = SpatialSM:forward(neg_input)
                                 neg_input = neg_input[{{},{1,classNum-1},{},{}}]
                                 neg_input,dummy = torch.max(neg_input,2)
                                 neg_input[1][1][torch.reshape(neg_mask[{{startIdx,startIdx+fmSz[lid]*fmSz[lid]-1}}],fmSz[lid],fmSz[lid])] = -1
@@ -268,7 +270,7 @@ function train(trainTarget, trainName)
                         end
 
                         
-                        
+                        --[===[ 
                         if tot_iter % 100 == 0 then
                             --for debug
                             neg_img = inputs[bid]:clone()
@@ -286,6 +288,7 @@ function train(trainTarget, trainName)
                             end
                             image.save("neg" .. tostring(bid) .. ".jpg",neg_img)
                         end
+                        --]===]
                         
                         conf_out = torch.Tensor(table.getn(pos_set)+table.getn(neg_set),classNum):type('torch.CudaTensor')
                         conf_target = torch.Tensor(table.getn(pos_set)+table.getn(neg_set),1):type('torch.CudaTensor')
@@ -306,7 +309,7 @@ function train(trainTarget, trainName)
 
                             confusion_target = torch.Tensor(classNum-1):zero()
                             confusion_target[label] = 1
-                            confusion:add(SM:forward(conf_out[cid][{{1,classNum-1}}]:type('torch.CudaTensor')):clone(),confusion_target)
+                            confusion:add(SM:forward(conf_out[cid][{{1,classNum-1}}]:type('torch.CudaTensor')),confusion_target)
 
 
                             local tx = pos_set[cid][6]

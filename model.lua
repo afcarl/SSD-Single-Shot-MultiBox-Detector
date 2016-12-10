@@ -38,7 +38,7 @@ function build_l2_normalize(dim)
 end
 
 ----------------------------
-VGG_pretrain = loadcaffe.load("/media/sda1/Model/VGG/deploy.prototxt","/media/sda1/Model/VGG/VGG_ILSVRC_16_layers_fc_reduced.caffemodel","cudnn")
+VGG_pretrain = loadcaffe.load(pretrain_dir .. "deploy.prototxt",pretrain_dir .. "VGG_ILSVRC_16_layers_fc_reduced.caffemodel","cudnn")
 
 VGGNet = nn.Sequential()
 

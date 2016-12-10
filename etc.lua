@@ -1,4 +1,5 @@
 db_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/"
+pretrain_dir = "/media/sda1/Model/VGG/"
 result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
