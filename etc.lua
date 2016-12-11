@@ -4,9 +4,9 @@ result_dir = "/media/sda1/Data/PASCAL_VOC/VOCdevkit/results/VOC2012/Main/"
 model_dir = result_dir .. "model/"
 fig_dir = result_dir .. "fig/"
 
-mode = "train"
-continue = true
-continue_iter = 38e3
+mode = "test"
+continue = false
+continue_iter = 0
 
 classNum = 21
 negId = 21
