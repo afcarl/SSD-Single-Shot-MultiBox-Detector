@@ -237,7 +237,7 @@ function train(trainTarget, trainName)
                             for aid = 1,ar_num do
 
                                 local neg_input = outputs[lid][{{bid},{(aid-1)*classNum+1,aid*classNum},{},{}}]
-                                neg_input = SpatialSM:forward(neg_input)
+                                neg_input = SpatialSM:forward(neg_input):clone()
                                 neg_input = neg_input[{{},{1,classNum-1},{},{}}]
                                 neg_input,dummy = torch.max(neg_input,2)
                                 neg_input[1][1][torch.reshape(neg_mask[{{startIdx,startIdx+fmSz[lid]*fmSz[lid]-1}}],fmSz[lid],fmSz[lid])] = -1
@@ -309,7 +309,7 @@ function train(trainTarget, trainName)
 
                             confusion_target = torch.Tensor(classNum-1):zero()
                             confusion_target[label] = 1
-                            confusion:add(SM:forward(conf_out[cid][{{1,classNum-1}}]:type('torch.CudaTensor')),confusion_target)
+                            confusion:add(SM:forward(conf_out[cid][{{1,classNum-1}}]:type('torch.CudaTensor')):clone(),confusion_target)
 
 
                             local tx = pos_set[cid][6]
