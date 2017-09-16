@@ -372,7 +372,7 @@ function train(trainTarget, trainName)
                     
                     model:backward(inputs,tot_dfdo)
 
-                    gradParams:div(curBatchDim)
+                 
                     class_error = class_error/curBatchDim
                     loc_error = loc_error/curBatchDim
 
